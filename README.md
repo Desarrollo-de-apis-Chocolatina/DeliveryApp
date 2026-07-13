@@ -41,5 +41,16 @@ src/
   config/
   database/             # Migrations y seeds
 test/
-docs/postman/           # Colección de Postman
+docs/
+  GUIA_PARA_COMPANEROS.md # Guía oficial de integración para Personas 2, 3, 4, 5 y sus IAs
+  postman/                # Colección de Postman
 ```
+
+## 👥 Guía para el Equipo (Personas 2 a 5) y sus IAs
+
+Si eres un compañero de equipo o un asistente de Inteligencia Artificial (ChatGPT, Claude, Gemini, Cursor) a punto de integrar un nuevo módulo, **lee o carga el archivo de guía oficial antes de escribir código**:
+
+👉 **[docs/GUIA_PARA_COMPANEROS.md](file:///c:/Users/ale/Documents/APIS/DeliveryApp/docs/GUIA_PARA_COMPANEROS.md)**
+
+Contiene las **reglas de oro de la arquitectura** (Guards globales, obtención de `@CurrentUser()`, DTOs con `class-validator`), indicaciones por rol/módulo y las reglas transaccionales de inventario e integración.
+
