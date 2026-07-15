@@ -7,6 +7,12 @@ import { UsuariosModule } from './usuarios/usuarios.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
+import { MenuModule } from './menu/menu.module';
+import { RecetasModule } from './recetas/recetas.module';
+import { CategoriasModule } from './menu/categorias/categorias.module';
+import { PlatillosModule } from './menu/platillos/platillos.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 @Module({
   imports: [
@@ -24,6 +30,12 @@ import { RolesGuard } from './auth/guards/roles.guard';
     AuthModule,
     UsuariosModule,
 
+    // Módulos de negocio de Persona 2
+    MenuModule,
+    CategoriasModule,
+    PlatillosModule,
+    RecetasModule,
+
     // Los módulos de las otras personas se agregan aquí cuando los entreguen:
     // InventarioModule,   <- Persona 3
     // MenuModule,         <- Persona 2
@@ -33,7 +45,10 @@ import { RolesGuard } from './auth/guards/roles.guard';
     // CajaModule,         <- Persona 5
     // RentabilidadModule, <- Persona 5
   ],
+  controllers: [AppController],
   providers: [
+    AppService,
+
     /**
      * Guards globales — aplican a TODOS los endpoints sin necesitar @UseGuards().
      *
