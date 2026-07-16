@@ -44,13 +44,18 @@ export class RentabilidadService {
         platilloId: platillo.id,
         nombre: platillo.nombre,
         precio,
-        costoReceta,
-        margenNominal,
-        margenPct: precio > 0 ? (margenNominal / precio) * 100 : 0,
+        costoReceta: this.redondear(costoReceta),
+        margenNominal: this.redondear(margenNominal),
+        margenPct: precio > 0 ? this.redondear((margenNominal / precio) * 100) : 0,
       });
     }
 
     return filas.sort((a, b) => b.margenNominal - a.margenNominal);
+  }
+
+  /** Redondea a 2 decimales para presentar montos financieros limpios. */
+  private redondear(valor: number): number {
+    return Math.round(valor * 100) / 100;
   }
 
   private async calcularCostoReceta(platilloId: number): Promise<number> {
