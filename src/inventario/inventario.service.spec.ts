@@ -135,4 +135,57 @@ describe('InventarioService', () => {
       expect(resultado.activo).toBe(false);
     });
   });
+
+  describe('registrarCompra', () => {
+    it('recalcula el costo promedio ponderado y suma el stock', async () => {
+      repository.findOne.mockResolvedValue({
+        id: 1,
+        nombre: 'Harina',
+        stock: 10,
+        costoUnitarioPromedio: 2,
+        stockMinimo: 5,
+      });
+
+      // (10*2 + 10*4) / 20 = 3
+      const resultado = await service.registrarCompra(1, {
+        cantidad: 10,
+        costoUnitario: 4,
+      });
+
+      expect(resultado.costoUnitarioPromedio).toBe(3);
+      expect(resultado.stock).toBe(20);
+    });
+
+    it('usa el costo de la compra como promedio cuando el stock actual es 0', async () => {
+      repository.findOne.mockResolvedValue({
+        id: 1,
+        nombre: 'Harina',
+        stock: 0,
+        costoUnitarioPromedio: 0,
+        stockMinimo: 5,
+      });
+
+      const resultado = await service.registrarCompra(1, {
+        cantidad: 5,
+        costoUnitario: 3,
+      });
+
+      expect(resultado.costoUnitarioPromedio).toBe(3);
+      expect(resultado.stock).toBe(5);
+    });
+  });
+
+  describe('findAlertas', () => {
+    it('devuelve solo los ingredientes con stock por debajo o igual al mínimo', async () => {
+      repository.find.mockResolvedValue([
+        { id: 1, nombre: 'Harina', stock: 2, stockMinimo: 5 },
+        { id: 2, nombre: 'Sal', stock: 10, stockMinimo: 5 },
+        { id: 3, nombre: 'Azucar', stock: 5, stockMinimo: 5 },
+      ]);
+
+      const resultado = await service.findAlertas();
+
+      expect(resultado.map((i) => i.nombre)).toEqual(['Harina', 'Azucar']);
+    });
+  });
 });

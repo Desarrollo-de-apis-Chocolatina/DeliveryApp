@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { Ingrediente } from './entities/ingrediente.entity';
 import { CreateIngredienteDto } from './dto/create-ingrediente.dto';
 import { UpdateIngredienteDto } from './dto/update-ingrediente.dto';
+import { RegistrarCompraDto } from './dto/registrar-compra.dto';
 import { RecetasService } from '../recetas/recetas.service';
 import { PlatillosService } from '../menu/platillos/platillos.service';
 
@@ -79,6 +80,33 @@ export class InventarioService {
     ingrediente.activo = false;
 
     return await this.ingredienteRepository.save(ingrediente);
+  }
+
+  async registrarCompra(
+    id: number,
+    dto: RegistrarCompraDto,
+  ): Promise<Ingrediente> {
+    const ingrediente = await this.findIngredienteOrFail(id);
+
+    const stockActual = ingrediente.stock;
+    const costoActual = ingrediente.costoUnitarioPromedio;
+    const stockNuevo = stockActual + dto.cantidad;
+
+    ingrediente.costoUnitarioPromedio =
+      (stockActual * costoActual + dto.cantidad * dto.costoUnitario) /
+      stockNuevo;
+    ingrediente.stock = stockNuevo;
+
+    return await this.ingredienteRepository.save(ingrediente);
+  }
+
+  async findAlertas(): Promise<Ingrediente[]> {
+    const ingredientes = await this.ingredienteRepository.find({
+      where: { activo: true },
+      order: { nombre: 'ASC' },
+    });
+
+    return ingredientes.filter((i) => i.stock <= i.stockMinimo);
   }
 
   private async findIngredienteOrFail(id: number): Promise<Ingrediente> {
