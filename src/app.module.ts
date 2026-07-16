@@ -12,6 +12,9 @@ import { RecetasModule } from './recetas/recetas.module';
 import { CategoriasModule } from './menu/categorias/categorias.module';
 import { PlatillosModule } from './menu/platillos/platillos.module';
 import { InventarioModule } from './inventario/inventario.module';
+import { PedidosDeliveryModule } from './pedidos-delivery/pedidos-delivery.module';
+import { PedidosMesaModule } from './pedidos-mesa/pedidos-mesa.module';
+import { RepartidoresModule } from './repartidores/repartidores.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -40,9 +43,9 @@ import { AppService } from './app.service';
     // Los módulos de las otras personas se agregan aquí cuando los entreguen:
     InventarioModule,
     // MenuModule,         <- Persona 2
-    // PedidosMesaModule,  <- Persona 4
-    // PedidosDeliveryModule, <- Persona 4
-    // RepartidoresModule, <- Persona 4
+    PedidosMesaModule,
+    PedidosDeliveryModule,
+    RepartidoresModule,
     // CajaModule,         <- Persona 5
     // RentabilidadModule, <- Persona 5
   ],
