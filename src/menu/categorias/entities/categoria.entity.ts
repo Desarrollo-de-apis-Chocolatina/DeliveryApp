@@ -10,40 +10,36 @@ import { Platillo } from '../../platillos/entities/platillo.entity';
 
 @Entity('categorias')
 export class Categoria {
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @PrimaryGeneratedColumn()
-    id: number;
+  @Column({
+    unique: true,
+    length: 100,
+  })
+  nombre: string;
 
-    @Column({
-        unique: true,
-        length:100
-    })
-    nombre:string;
+  @Column({
+    nullable: true,
+    length: 255,
+  })
+  descripcion: string;
 
-    @Column({
-        nullable:true,
-        length:255
-    })
-    descripcion:string;
+  @Column({
+    default: true,
+  })
+  activa: boolean;
 
-    @Column({
-        default:true
-    })
-    activa:boolean;
+  @CreateDateColumn({
+    name: 'created_at',
+  })
+  createdAt: Date;
 
-    @CreateDateColumn({
-        name:'created_at'
-    })
-    createdAt:Date;
+  @UpdateDateColumn({
+    name: 'updated_at',
+  })
+  updatedAt: Date;
 
-    @UpdateDateColumn({
-        name:'updated_at'
-    })
-    updatedAt:Date;
-
-    @OneToMany(
-    () => Platillo,
-    (platillo) => platillo.categoria,
-    )
-    platillos: Platillo[];
+  @OneToMany(() => Platillo, (platillo) => platillo.categoria)
+  platillos: Platillo[];
 }

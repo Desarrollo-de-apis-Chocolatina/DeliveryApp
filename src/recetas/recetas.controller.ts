@@ -1,4 +1,12 @@
-import {Body, Controller, Delete, Get, Param, ParseIntPipe, Post} from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+} from '@nestjs/common';
 import { RecetasService } from './recetas.service';
 import { CreateRecetaDto } from './dto/create-receta.dto';
 import {
@@ -18,18 +26,16 @@ import { Rol } from '../usuarios/entities/usuario.entity';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('recetas')
 export class RecetasController {
-  constructor(
-    private readonly recetasService: RecetasService,
-  ) {}
+  constructor(private readonly recetasService: RecetasService) {}
 
   @ApiOperation({
     summary: 'Crear o reemplazar la receta de un platillo',
-    })
-    @ApiResponse({
+  })
+  @ApiResponse({
     status: 201,
     description: 'Receta guardada correctamente.',
-    })
-    @Roles(Rol.ADMIN, Rol.COCINA)
+  })
+  @Roles(Rol.ADMIN, Rol.COCINA)
   @Post('platillo/:platilloId')
   createOrReplace(
     @Param('platilloId', ParseIntPipe)
@@ -38,48 +44,41 @@ export class RecetasController {
     @Body()
     createRecetaDto: CreateRecetaDto,
   ) {
-    return this.recetasService.createOrReplace(
-      platilloId,
-      createRecetaDto,
-    );
+    return this.recetasService.createOrReplace(platilloId, createRecetaDto);
   }
 
   @ApiOperation({
     summary: 'Obtener la receta de un platillo',
-    })
-    @ApiResponse({
+  })
+  @ApiResponse({
     status: 200,
     description: 'Receta encontrada.',
-    })
-    @ApiResponse({
+  })
+  @ApiResponse({
     status: 404,
     description: 'Platillo no encontrado.',
-    })
+  })
   @Get('platillo/:platilloId')
   findByPlatillo(
     @Param('platilloId', ParseIntPipe)
     platilloId: number,
   ) {
-    return this.recetasService.findByPlatillo(
-      platilloId,
-    );
+    return this.recetasService.findByPlatillo(platilloId);
   }
 
   @ApiOperation({
     summary: 'Eliminar la receta de un platillo',
-    })
-    @ApiResponse({
+  })
+  @ApiResponse({
     status: 200,
     description: 'Receta eliminada correctamente.',
-    })
-    @Roles(Rol.ADMIN, Rol.COCINA)
+  })
+  @Roles(Rol.ADMIN, Rol.COCINA)
   @Delete('platillo/:platilloId')
   removeByPlatillo(
     @Param('platilloId', ParseIntPipe)
     platilloId: number,
   ) {
-    return this.recetasService.removeByPlatillo(
-      platilloId,
-    );
+    return this.recetasService.removeByPlatillo(platilloId);
   }
 }

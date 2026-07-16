@@ -1,9 +1,4 @@
-import {
-  IsBoolean,
-  IsInt,
-  IsNumber,
-  IsPositive,
-} from 'class-validator';
+import { IsBoolean, IsInt, IsNumber, IsPositive } from 'class-validator';
 
 export class IngredienteRecetaDto {
   @IsInt({
@@ -14,7 +9,8 @@ export class IngredienteRecetaDto {
   @IsNumber(
     { maxDecimalPlaces: 2 },
     {
-      message: 'La cantidad por porción debe ser un número con máximo 2 decimales.',
+      message:
+        'La cantidad por porción debe ser un número con máximo 2 decimales.',
     },
   )
   @IsPositive({

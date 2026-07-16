@@ -35,9 +35,13 @@ describe('InventarioController', () => {
   });
 
   it('create delega en InventarioService.create', () => {
-    const dto = { nombre: 'Harina', unidadMedida: UnidadMedida.KG, stockMinimo: 5 };
+    const dto = {
+      nombre: 'Harina',
+      unidadMedida: UnidadMedida.KG,
+      stockMinimo: 5,
+    };
 
-    controller.create(dto as any);
+    controller.create(dto);
 
     expect(service.create).toHaveBeenCalledWith(dto);
   });
@@ -63,7 +67,7 @@ describe('InventarioController', () => {
   it('update delega en InventarioService.update', () => {
     const dto = { stockMinimo: 3 };
 
-    controller.update(7, dto as any);
+    controller.update(7, dto);
 
     expect(service.update).toHaveBeenCalledWith(7, dto);
   });
@@ -71,7 +75,7 @@ describe('InventarioController', () => {
   it('registrarCompra delega en InventarioService.registrarCompra', () => {
     const dto = { cantidad: 5, costoUnitario: 2 };
 
-    controller.registrarCompra(7, dto as any);
+    controller.registrarCompra(7, dto);
 
     expect(service.registrarCompra).toHaveBeenCalledWith(7, dto);
   });

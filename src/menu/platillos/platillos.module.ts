@@ -6,12 +6,7 @@ import { Platillo } from './entities/platillo.entity';
 import { Categoria } from '../categorias/entities/categoria.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      Platillo,
-      Categoria,
-    ]),
-  ],
+  imports: [TypeOrmModule.forFeature([Platillo, Categoria])],
   controllers: [PlatillosController],
   providers: [PlatillosService],
   exports: [PlatillosService],

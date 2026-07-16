@@ -1,4 +1,11 @@
-import { IsEnum, IsNumber, IsOptional, IsString, Min, MaxLength } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+  MaxLength,
+} from 'class-validator';
 import { UnidadMedida } from '../entities/ingrediente.entity';
 
 /**

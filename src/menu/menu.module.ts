@@ -3,13 +3,7 @@ import { CategoriasModule } from './categorias/categorias.module';
 import { PlatillosModule } from './platillos/platillos.module';
 
 @Module({
-  imports: [
-    CategoriasModule,
-    PlatillosModule,
-  ],
-  exports: [
-    CategoriasModule,
-    PlatillosModule,
-  ],
+  imports: [CategoriasModule, PlatillosModule],
+  exports: [CategoriasModule, PlatillosModule],
 })
 export class MenuModule {}

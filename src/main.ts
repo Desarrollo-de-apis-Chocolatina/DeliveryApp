@@ -24,11 +24,11 @@ async function bootstrap() {
     .setTitle('DeliveryApp API')
     .setDescription(
       'API de Gestión de Restaurante con Delivery.\n\n' +
-      '**Flujos principales:**\n' +
-      '1. Registrar usuario → `POST /api/auth/register`\n' +
-      '2. Login → `POST /api/auth/login` → copiar `access_token`\n' +
-      '3. Click en **Authorize** → pegar token\n' +
-      '4. Explorar endpoints protegidos por rol',
+        '**Flujos principales:**\n' +
+        '1. Registrar usuario → `POST /api/auth/register`\n' +
+        '2. Login → `POST /api/auth/login` → copiar `access_token`\n' +
+        '3. Click en **Authorize** → pegar token\n' +
+        '4. Explorar endpoints protegidos por rol',
     )
     .setVersion('1.0')
     .addBearerAuth(

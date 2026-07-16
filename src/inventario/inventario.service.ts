@@ -123,8 +123,12 @@ export class InventarioService {
       await this.recetasService.findByPlatillo(platilloId);
 
     // Primera pasada: validar que TODOS los ingredientes tengan stock
-    // suficiente antes de mutar cualquiera (todo o nada, incluso sin
-    // transacción externa).
+    // suficiente antes de mutar cualquiera. La validación en sí es siempre
+    // todo o nada (no se guarda nada hasta que todos pasen), pero la
+    // atomicidad de la segunda pasada (aplicar los descuentos) solo está
+    // garantizada cuando el llamador provee un `manager` transaccional: sin
+    // él, un error tardío al guardar el ingrediente N dejaría los
+    // ingredientes 1..N-1 ya persistidos.
     const descuentos: {
       ingrediente: Ingrediente;
       cantidadADescontar: number;
@@ -135,9 +139,20 @@ export class InventarioService {
       const cantidadADescontar =
         recetaIngrediente.cantidadPorPorcion * cantidadPorciones;
 
-      const ingrediente = await ingredienteRepo.findOne({
-        where: { id: recetaIngrediente.ingredienteId },
-      });
+      // El lock pesimista solo tiene efecto real dentro de una transacción
+      // activa (la que el llamador abre y nos pasa como `manager`). Fuera de
+      // una transacción, `pessimistic_write` es un no-op o puede fallar
+      // según el driver, así que solo lo pedimos cuando hay `manager`.
+      const ingrediente = await ingredienteRepo.findOne(
+        manager
+          ? {
+              where: { id: recetaIngrediente.ingredienteId },
+              lock: { mode: 'pessimistic_write' },
+            }
+          : {
+              where: { id: recetaIngrediente.ingredienteId },
+            },
+      );
 
       if (!ingrediente) {
         throw new NotFoundException(
@@ -170,6 +185,10 @@ export class InventarioService {
 
       // Regla 1 (README): solo los ingredientes clave disparan la
       // indisponibilidad automática del platillo al llegar a 0.
+      // NOTA: esta llamada NO está cubierta por la transacción del
+      // llamador: pasa por el repositorio propio de PlatillosService, no
+      // por el `manager` recibido aquí. Si la transacción del llamador
+      // hace rollback después, esta notificación no se deshace.
       if (ingrediente.stock <= 0 && esIngredienteClave) {
         await this.platillosService.marcarNoDisponiblePorIngrediente(
           ingrediente.id,

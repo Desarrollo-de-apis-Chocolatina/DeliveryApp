@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { EntityManager } from 'typeorm';
 import {
   BadRequestException,
   ConflictException,
@@ -25,8 +26,12 @@ describe('InventarioService', () => {
     repository = {
       find: jest.fn(),
       findOne: jest.fn(),
-      create: jest.fn((dto) => ({ ...dto })),
-      save: jest.fn(async (entity) => entity),
+      create: jest.fn(
+        (dto: Partial<Ingrediente>): Partial<Ingrediente> => ({ ...dto }),
+      ),
+      save: jest.fn(
+        (entity: Ingrediente): Promise<Ingrediente> => Promise.resolve(entity),
+      ),
     };
     recetasService = { findByPlatillo: jest.fn() };
     platillosService = { marcarNoDisponiblePorIngrediente: jest.fn() };
@@ -310,6 +315,49 @@ describe('InventarioService', () => {
       expect(
         platillosService.marcarNoDisponiblePorIngrediente,
       ).not.toHaveBeenCalled();
+    });
+
+    it('usa un lock pesimista al leer el ingrediente cuando se provee un manager transaccional', async () => {
+      recetasService.findByPlatillo.mockResolvedValue([
+        { ingredienteId: 1, cantidadPorPorcion: 1, esIngredienteClave: false },
+      ]);
+      const managerRepo = {
+        findOne: jest.fn().mockResolvedValue({
+          id: 1,
+          nombre: 'Carne',
+          stock: 5,
+          stockMinimo: 1,
+        }),
+        save: jest.fn((entity: Ingrediente) => Promise.resolve(entity)),
+      };
+      const manager = {
+        getRepository: jest.fn().mockReturnValue(managerRepo),
+      } as unknown as EntityManager;
+
+      await service.descontarStockDePlatillo(10, 1, manager);
+
+      expect(managerRepo.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({ lock: { mode: 'pessimistic_write' } }),
+      );
+      expect(repository.findOne).not.toHaveBeenCalled();
+    });
+
+    it('NO usa lock pesimista cuando no se provee manager (findOne plano)', async () => {
+      recetasService.findByPlatillo.mockResolvedValue([
+        { ingredienteId: 1, cantidadPorPorcion: 1, esIngredienteClave: false },
+      ]);
+      repository.findOne.mockResolvedValue({
+        id: 1,
+        nombre: 'Carne',
+        stock: 5,
+        stockMinimo: 1,
+      });
+
+      await service.descontarStockDePlatillo(10, 1);
+
+      expect(repository.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+      });
     });
   });
 });

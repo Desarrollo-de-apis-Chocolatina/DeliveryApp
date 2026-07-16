@@ -17,9 +17,7 @@ export class CategoriasService {
     private readonly categoriaRepository: Repository<Categoria>,
   ) {}
 
-  async create(
-    createCategoriaDto: CreateCategoriaDto,
-  ): Promise<Categoria> {
+  async create(createCategoriaDto: CreateCategoriaDto): Promise<Categoria> {
     const categoriaExistente = await this.categoriaRepository.findOne({
       where: {
         nombre: createCategoriaDto.nombre,
@@ -27,9 +25,7 @@ export class CategoriasService {
     });
 
     if (categoriaExistente) {
-      throw new ConflictException(
-        'Ya existe una categoría con ese nombre.',
-      );
+      throw new ConflictException('Ya existe una categoría con ese nombre.');
     }
 
     const categoria = this.categoriaRepository.create(createCategoriaDto);
@@ -69,9 +65,7 @@ export class CategoriasService {
       });
 
       if (categoriaExistente) {
-        throw new ConflictException(
-          'Ya existe una categoría con ese nombre.',
-        );
+        throw new ConflictException('Ya existe una categoría con ese nombre.');
       }
     }
 
@@ -88,17 +82,13 @@ export class CategoriasService {
     return await this.categoriaRepository.save(categoria);
   }
 
-  private async findCategoriaOrFail(
-    id: number,
-  ): Promise<Categoria> {
+  private async findCategoriaOrFail(id: number): Promise<Categoria> {
     const categoria = await this.categoriaRepository.findOne({
       where: { id },
     });
 
     if (!categoria) {
-      throw new NotFoundException(
-        `La categoría con ID ${id} no existe.`,
-      );
+      throw new NotFoundException(`La categoría con ID ${id} no existe.`);
     }
 
     return categoria;
