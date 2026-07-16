@@ -568,20 +568,23 @@ Expected: FAIL — no se puede resolver el módulo `./inventario.service`.
 
 - [ ] **Step 3: Write the minimal implementation**
 
+Solo importar lo que este task usa. `BadRequestException`, `EntityManager` y `RegistrarCompraDto`
+NO se importan todavía — los agregan los Tasks 4 y 5 cuando introducen los métodos que
+realmente los usan (importarlos antes causa errores de `@typescript-eslint/no-unused-vars`
+en `npm run lint`).
+
 ```ts
 // src/inventario/inventario.service.ts
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Ingrediente } from './entities/ingrediente.entity';
 import { CreateIngredienteDto } from './dto/create-ingrediente.dto';
 import { UpdateIngredienteDto } from './dto/update-ingrediente.dto';
-import { RegistrarCompraDto } from './dto/registrar-compra.dto';
 import { RecetasService } from '../recetas/recetas.service';
 import { PlatillosService } from '../menu/platillos/platillos.service';
 
@@ -672,7 +675,7 @@ export class InventarioService {
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npm test -- inventario.service`
-Expected: PASS — 7 tests.
+Expected: PASS — 8 tests.
 
 - [ ] **Step 5: Commit**
 
@@ -758,6 +761,12 @@ Expected: FAIL — `service.registrarCompra is not a function`, `service.findAle
 
 - [ ] **Step 3: Add the methods to `InventarioService`**
 
+Agregar el import de `RegistrarCompraDto` junto a los demás imports de DTOs al inicio del archivo:
+
+```ts
+import { RegistrarCompraDto } from './dto/registrar-compra.dto';
+```
+
 Agregar estos dos métodos dentro de la clase `InventarioService` (después de `remove`, antes de `findIngredienteOrFail`):
 
 ```ts
@@ -788,7 +797,7 @@ Agregar estos dos métodos dentro de la clase `InventarioService` (después de `
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npm test -- inventario.service`
-Expected: PASS — 10 tests.
+Expected: PASS — 11 tests.
 
 - [ ] **Step 5: Commit**
 
@@ -913,6 +922,21 @@ Expected: FAIL — `service.descontarStockDePlatillo is not a function`.
 
 - [ ] **Step 3: Add the method to `InventarioService`**
 
+Actualizar el import de `@nestjs/common` para incluir `BadRequestException`, y el de `typeorm` para incluir `EntityManager`:
+
+```ts
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+```
+
+```ts
+import { EntityManager, Repository } from 'typeorm';
+```
+
 Agregar este método dentro de la clase `InventarioService` (después de `findAlertas`, antes de `findIngredienteOrFail`):
 
 ```ts
@@ -971,7 +995,7 @@ Agregar este método dentro de la clase `InventarioService` (después de `findAl
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npm test -- inventario.service`
-Expected: PASS — 15 tests.
+Expected: PASS — 16 tests.
 
 - [ ] **Step 5: Commit**
 
