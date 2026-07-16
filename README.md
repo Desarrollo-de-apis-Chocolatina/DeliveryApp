@@ -50,7 +50,27 @@ docs/
 
 Si eres un compañero de equipo o un asistente de Inteligencia Artificial (ChatGPT, Claude, Gemini, Cursor) a punto de integrar un nuevo módulo, **lee o carga el archivo de guía oficial antes de escribir código**:
 
-👉 **[docs/GUIA_PARA_COMPANEROS.md](file:///c:/Users/ale/Documents/APIS/DeliveryApp/docs/GUIA_PARA_COMPANEROS.md)**
+👉 **[docs/GUIA_PARA_COMPANEROS.md](docs/GUIA_PARA_COMPANEROS.md)**
 
 Contiene las **reglas de oro de la arquitectura** (Guards globales, obtención de `@CurrentUser()`, DTOs con `class-validator`), indicaciones por rol/módulo y las reglas transaccionales de inventario e integración.
+
+## Caja y Rentabilidad (Persona 5)
+
+- `POST /api/caja/pagos` — registra el cobro de un pedido (tipo de pago, propina) y lo marca `PAGADO`.
+- `GET /api/caja/cierre-diario?fecha=YYYY-MM-DD` — ventas, propinas, desglose por tipo de pago y comparativa vs día anterior.
+- `GET /api/rentabilidad/platillos` — margen por platillo (precio − costo de receta), en valor y porcentaje.
+
+Todos requieren rol `ADMIN` o `CAJERO`.
+
+## Pruebas y documentación
+
+```bash
+npm run test:cov   # unitarias + cobertura (umbral global 70%)
+npm run test:e2e   # flujo completo, incluye inventario insuficiente (400 + rollback)
+```
+
+Las pruebas e2e necesitan una base de datos PostgreSQL accesible. Si el puerto `5432` ya está ocupado por un Postgres local, crea un `docker-compose.override.yml` que publique el contenedor en otro puerto (p. ej. `5433:5432`) y ajusta `DB_PORT` en tu `.env`.
+
+- **Swagger:** `http://localhost:3000/api/docs`.
+- **Colección Postman:** [`docs/postman/DeliveryApp.postman_collection.json`](docs/postman/DeliveryApp.postman_collection.json) — secuencia de demostración de mesa, delivery e inventario insuficiente.
 
