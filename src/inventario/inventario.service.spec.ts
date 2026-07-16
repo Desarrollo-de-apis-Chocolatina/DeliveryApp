@@ -1,6 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InventarioService } from './inventario.service';
 import { Ingrediente, UnidadMedida } from './entities/ingrediente.entity';
 import { RecetasService } from '../recetas/recetas.service';
@@ -128,7 +132,11 @@ describe('InventarioService', () => {
 
   describe('remove', () => {
     it('desactiva el ingrediente (soft delete)', async () => {
-      repository.findOne.mockResolvedValue({ id: 1, nombre: 'Harina', activo: true });
+      repository.findOne.mockResolvedValue({
+        id: 1,
+        nombre: 'Harina',
+        activo: true,
+      });
 
       const resultado = await service.remove(1);
 
@@ -186,6 +194,122 @@ describe('InventarioService', () => {
       const resultado = await service.findAlertas();
 
       expect(resultado.map((i) => i.nombre)).toEqual(['Harina', 'Azucar']);
+    });
+  });
+
+  describe('descontarStockDePlatillo', () => {
+    it('descuenta el stock de cada ingrediente de la receta', async () => {
+      recetasService.findByPlatillo.mockResolvedValue([
+        { ingredienteId: 1, cantidadPorPorcion: 0.2 },
+      ]);
+      repository.findOne.mockResolvedValue({
+        id: 1,
+        nombre: 'Carne',
+        stock: 5,
+        stockMinimo: 1,
+      });
+
+      await service.descontarStockDePlatillo(10, 3);
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 1, stock: 5 - 0.2 * 3 }),
+      );
+    });
+
+    it('lanza BadRequestException si algún ingrediente no tiene stock suficiente y no guarda nada', async () => {
+      recetasService.findByPlatillo.mockResolvedValue([
+        { ingredienteId: 1, cantidadPorPorcion: 10 },
+      ]);
+      repository.findOne.mockResolvedValue({
+        id: 1,
+        nombre: 'Carne',
+        stock: 5,
+        stockMinimo: 1,
+      });
+
+      await expect(service.descontarStockDePlatillo(10, 3)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('no descuenta ningún ingrediente si uno de la lista falla (todo o nada)', async () => {
+      recetasService.findByPlatillo.mockResolvedValue([
+        { ingredienteId: 1, cantidadPorPorcion: 1 },
+        { ingredienteId: 2, cantidadPorPorcion: 100 },
+      ]);
+      repository.findOne
+        .mockResolvedValueOnce({
+          id: 1,
+          nombre: 'Carne',
+          stock: 5,
+          stockMinimo: 1,
+        })
+        .mockResolvedValueOnce({
+          id: 2,
+          nombre: 'Sal',
+          stock: 1,
+          stockMinimo: 1,
+        });
+
+      await expect(service.descontarStockDePlatillo(10, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('marca el platillo no disponible cuando un ingrediente CLAVE llega a stock 0', async () => {
+      recetasService.findByPlatillo.mockResolvedValue([
+        { ingredienteId: 1, cantidadPorPorcion: 5, esIngredienteClave: true },
+      ]);
+      repository.findOne.mockResolvedValue({
+        id: 1,
+        nombre: 'Carne',
+        stock: 5,
+        stockMinimo: 1,
+      });
+
+      await service.descontarStockDePlatillo(10, 1);
+
+      expect(
+        platillosService.marcarNoDisponiblePorIngrediente,
+      ).toHaveBeenCalledWith(1);
+    });
+
+    it('NO marca el platillo no disponible si el ingrediente en 0 no es clave', async () => {
+      recetasService.findByPlatillo.mockResolvedValue([
+        { ingredienteId: 1, cantidadPorPorcion: 5, esIngredienteClave: false },
+      ]);
+      repository.findOne.mockResolvedValue({
+        id: 1,
+        nombre: 'Carne',
+        stock: 5,
+        stockMinimo: 1,
+      });
+
+      await service.descontarStockDePlatillo(10, 1);
+
+      expect(
+        platillosService.marcarNoDisponiblePorIngrediente,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('no marca el platillo no disponible si el stock queda por encima de 0', async () => {
+      recetasService.findByPlatillo.mockResolvedValue([
+        { ingredienteId: 1, cantidadPorPorcion: 1, esIngredienteClave: true },
+      ]);
+      repository.findOne.mockResolvedValue({
+        id: 1,
+        nombre: 'Carne',
+        stock: 5,
+        stockMinimo: 1,
+      });
+
+      await service.descontarStockDePlatillo(10, 1);
+
+      expect(
+        platillosService.marcarNoDisponiblePorIngrediente,
+      ).not.toHaveBeenCalled();
     });
   });
 });

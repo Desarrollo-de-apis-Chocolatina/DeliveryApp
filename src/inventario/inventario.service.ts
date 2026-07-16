@@ -1,10 +1,11 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { Ingrediente } from './entities/ingrediente.entity';
 import { CreateIngredienteDto } from './dto/create-ingrediente.dto';
 import { UpdateIngredienteDto } from './dto/update-ingrediente.dto';
@@ -107,6 +108,74 @@ export class InventarioService {
     });
 
     return ingredientes.filter((i) => i.stock <= i.stockMinimo);
+  }
+
+  async descontarStockDePlatillo(
+    platilloId: number,
+    cantidadPorciones: number,
+    manager?: EntityManager,
+  ): Promise<void> {
+    const ingredienteRepo = manager
+      ? manager.getRepository(Ingrediente)
+      : this.ingredienteRepository;
+
+    const recetaIngredientes =
+      await this.recetasService.findByPlatillo(platilloId);
+
+    // Primera pasada: validar que TODOS los ingredientes tengan stock
+    // suficiente antes de mutar cualquiera (todo o nada, incluso sin
+    // transacción externa).
+    const descuentos: {
+      ingrediente: Ingrediente;
+      cantidadADescontar: number;
+      esIngredienteClave: boolean;
+    }[] = [];
+
+    for (const recetaIngrediente of recetaIngredientes) {
+      const cantidadADescontar =
+        recetaIngrediente.cantidadPorPorcion * cantidadPorciones;
+
+      const ingrediente = await ingredienteRepo.findOne({
+        where: { id: recetaIngrediente.ingredienteId },
+      });
+
+      if (!ingrediente) {
+        throw new NotFoundException(
+          `El ingrediente con ID ${recetaIngrediente.ingredienteId} no existe.`,
+        );
+      }
+
+      if (ingrediente.stock < cantidadADescontar) {
+        throw new BadRequestException(
+          `Stock insuficiente del ingrediente: ${ingrediente.nombre}`,
+        );
+      }
+
+      descuentos.push({
+        ingrediente,
+        cantidadADescontar,
+        esIngredienteClave: recetaIngrediente.esIngredienteClave,
+      });
+    }
+
+    // Segunda pasada: aplicar los descuentos ya validados.
+    for (const {
+      ingrediente,
+      cantidadADescontar,
+      esIngredienteClave,
+    } of descuentos) {
+      ingrediente.stock -= cantidadADescontar;
+
+      await ingredienteRepo.save(ingrediente);
+
+      // Regla 1 (README): solo los ingredientes clave disparan la
+      // indisponibilidad automática del platillo al llegar a 0.
+      if (ingrediente.stock <= 0 && esIngredienteClave) {
+        await this.platillosService.marcarNoDisponiblePorIngrediente(
+          ingrediente.id,
+        );
+      }
+    }
   }
 
   private async findIngredienteOrFail(id: number): Promise<Ingrediente> {
