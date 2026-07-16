@@ -1,15 +1,13 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Ingrediente } from './entities/ingrediente.entity';
 import { CreateIngredienteDto } from './dto/create-ingrediente.dto';
 import { UpdateIngredienteDto } from './dto/update-ingrediente.dto';
-import { RegistrarCompraDto } from './dto/registrar-compra.dto';
 import { RecetasService } from '../recetas/recetas.service';
 import { PlatillosService } from '../menu/platillos/platillos.service';
 
