@@ -77,8 +77,8 @@ export class Pago {
   @Column({ type: 'enum', enum: TipoPago })
   tipoPago: TipoPago;
 
-  @Column({ name: 'cajero_id', type: 'int', nullable: true })
-  cajeroId: number | null;
+  @Column({ name: 'cajero_id', type: 'uuid', nullable: true })
+  cajeroId: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

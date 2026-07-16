@@ -60,7 +60,7 @@ describe('CajaService', () => {
           tipoPago: TipoPago.TARJETA,
           propina: 3,
         },
-        42,
+        'cajero-uuid-1',
       );
 
       expect(manager.findOne).toHaveBeenCalledWith(PedidoMesa, {
@@ -73,7 +73,7 @@ describe('CajaService', () => {
       expect(pago.canal).toBe(CanalPedido.MESA);
       expect(pago.pedidoMesaId).toBe(7);
       expect(pago.pedidoDeliveryId).toBeNull();
-      expect(pago.cajeroId).toBe(42);
+      expect(pago.cajeroId).toBe('cajero-uuid-1');
     });
 
     it('usa propina 0 por defecto y resuelve el canal DELIVERY', async () => {
@@ -86,7 +86,7 @@ describe('CajaService', () => {
 
       const pago = await service.registrarPago(
         { canal: CanalPedido.DELIVERY, pedidoId: 3, tipoPago: TipoPago.EFECTIVO },
-        1,
+        'cajero-uuid-2',
       );
 
       expect(manager.findOne).toHaveBeenCalledWith(PedidoDelivery, {
@@ -105,7 +105,7 @@ describe('CajaService', () => {
       await expect(
         service.registrarPago(
           { canal: CanalPedido.MESA, pedidoId: 99, tipoPago: TipoPago.EFECTIVO },
-          1,
+          'cajero-uuid-3',
         ),
       ).rejects.toThrow(NotFoundException);
     });
@@ -120,9 +120,49 @@ describe('CajaService', () => {
       await expect(
         service.registrarPago(
           { canal: CanalPedido.MESA, pedidoId: 7, tipoPago: TipoPago.EFECTIVO },
-          1,
+          'cajero-uuid-4',
         ),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('cierreDiario', () => {
+    it('agrega ventas, propinas, desglose por tipo de pago y variación vs día anterior', async () => {
+      const pagosHoy = [
+        { monto: 10, propina: 1, tipoPago: TipoPago.EFECTIVO },
+        { monto: 20, propina: 2, tipoPago: TipoPago.TARJETA },
+        { monto: 5, propina: 0, tipoPago: TipoPago.TRANSFERENCIA },
+      ];
+      const pagosAyer = [{ monto: 25, propina: 0, tipoPago: TipoPago.EFECTIVO }];
+      // find se llama primero para hoy y luego para ayer
+      pagoRepository.find
+        .mockResolvedValueOnce(pagosHoy)
+        .mockResolvedValueOnce(pagosAyer);
+
+      const reporte = await service.cierreDiario('2026-07-16');
+
+      expect(reporte.fecha).toBe('2026-07-16');
+      expect(reporte.ventasTotales).toBe(35);
+      expect(reporte.propinasTotales).toBe(3);
+      expect(reporte.porTipoPago).toEqual({
+        EFECTIVO: 10,
+        TARJETA: 20,
+        TRANSFERENCIA: 5,
+      });
+      expect(reporte.ventasDiaAnterior).toBe(25);
+      // ((35 - 25) / 25) * 100 = 40
+      expect(reporte.variacionPct).toBe(40);
+    });
+
+    it('devuelve variacionPct null cuando no hubo ventas el día anterior', async () => {
+      pagoRepository.find
+        .mockResolvedValueOnce([{ monto: 10, propina: 0, tipoPago: TipoPago.EFECTIVO }])
+        .mockResolvedValueOnce([]);
+
+      const reporte = await service.cierreDiario('2026-07-16');
+
+      expect(reporte.ventasDiaAnterior).toBe(0);
+      expect(reporte.variacionPct).toBeNull();
     });
   });
 });
