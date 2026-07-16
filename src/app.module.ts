@@ -16,6 +16,7 @@ import { PedidosDeliveryModule } from './pedidos-delivery/pedidos-delivery.modul
 import { PedidosMesaModule } from './pedidos-mesa/pedidos-mesa.module';
 import { RepartidoresModule } from './repartidores/repartidores.module';
 import { CajaModule } from './caja/caja.module';
+import { RentabilidadModule } from './rentabilidad/rentabilidad.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -48,7 +49,7 @@ import { AppService } from './app.service';
     PedidosDeliveryModule,
     RepartidoresModule,
     CajaModule, // <- Persona 5
-    // RentabilidadModule, <- Persona 5
+    RentabilidadModule, // <- Persona 5
   ],
   controllers: [AppController],
   providers: [
