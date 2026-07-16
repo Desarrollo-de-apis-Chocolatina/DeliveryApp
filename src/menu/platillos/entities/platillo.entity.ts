@@ -59,6 +59,9 @@ export class Platillo {
   })
   updatedAt: Date;
 
-  @OneToMany(() => RecetaIngrediente, (receta) => receta.platillo)
-  receta: RecetaIngrediente[];
+  @OneToMany(
+    () => RecetaIngrediente,
+    (receta) => receta.platillo,
+    )
+    receta: RecetaIngrediente[];
 }

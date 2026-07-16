@@ -18,10 +18,9 @@ dotenv.config();
 // Si DB_HOST es 'db' (configurado para Docker) pero el script corre en Windows (fuera de Docker),
 // cambiamos automáticamente el host a 'localhost' para conectarnos al puerto 5432 expuesto por Docker.
 const isDocker = fs.existsSync('/.dockerenv');
-const host =
-  !isDocker && process.env.DB_HOST === 'db'
-    ? 'localhost'
-    : (process.env.DB_HOST ?? 'localhost');
+const host = (!isDocker && process.env.DB_HOST === 'db')
+  ? 'localhost'
+  : (process.env.DB_HOST ?? 'localhost');
 
 const dataSource = new DataSource({
   type: 'postgres',

@@ -6,7 +6,12 @@ import { RecetaIngrediente } from './entities/receta-ingrediente.entity';
 import { Platillo } from '../menu/platillos/entities/platillo.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([RecetaIngrediente, Platillo])],
+  imports: [
+    TypeOrmModule.forFeature([
+      RecetaIngrediente,
+      Platillo,
+    ]),
+  ],
   controllers: [RecetasController],
   providers: [RecetasService],
   exports: [RecetasService],

@@ -19,7 +19,9 @@ export class RecetasService {
     private readonly platilloRepository: Repository<Platillo>,
   ) {}
 
-  private async findPlatilloOrFail(id: number): Promise<Platillo> {
+  private async findPlatilloOrFail(
+    id: number,
+  ): Promise<Platillo> {
     const platillo = await this.platilloRepository.findOne({
       where: {
         id,
@@ -27,13 +29,17 @@ export class RecetasService {
     });
 
     if (!platillo) {
-      throw new NotFoundException(`El platillo con ID ${id} no existe.`);
+      throw new NotFoundException(
+        `El platillo con ID ${id} no existe.`,
+      );
     }
 
     return platillo;
   }
 
-  private validarIngredientesSinDuplicados(dto: CreateRecetaDto): void {
+  private validarIngredientesSinDuplicados(
+    dto: CreateRecetaDto,
+  ): void {
     const ids = dto.ingredientes.map(
       (ingrediente) => ingrediente.ingredienteId,
     );
@@ -53,7 +59,9 @@ export class RecetasService {
   ): Promise<RecetaIngrediente[]> {
     this.validarIngredientesSinDuplicados(dto);
 
-    const platillo = await this.findPlatilloOrFail(platilloId);
+    const platillo = await this.findPlatilloOrFail(
+      platilloId,
+    );
 
     await this.recetaRepository.delete({
       platillo: {
@@ -61,20 +69,29 @@ export class RecetasService {
       },
     });
 
-    const ingredientes = dto.ingredientes.map((ingrediente) =>
-      this.recetaRepository.create({
-        platillo,
-        ingredienteId: ingrediente.ingredienteId,
-        cantidadPorPorcion: ingrediente.cantidadPorPorcion,
-        esIngredienteClave: ingrediente.esIngredienteClave,
-      }),
+    const ingredientes = dto.ingredientes.map(
+      (ingrediente) =>
+        this.recetaRepository.create({
+          platillo,
+          ingredienteId: ingrediente.ingredienteId,
+          cantidadPorPorcion:
+            ingrediente.cantidadPorPorcion,
+          esIngredienteClave:
+            ingrediente.esIngredienteClave,
+        }),
     );
 
-    return await this.recetaRepository.save(ingredientes);
+    return await this.recetaRepository.save(
+      ingredientes,
+    );
   }
 
-  async findByPlatillo(platilloId: number): Promise<RecetaIngrediente[]> {
-    await this.findPlatilloOrFail(platilloId);
+  async findByPlatillo(
+    platilloId: number,
+  ): Promise<RecetaIngrediente[]> {
+    await this.findPlatilloOrFail(
+      platilloId,
+    );
 
     return await this.recetaRepository.find({
       where: {
@@ -89,8 +106,12 @@ export class RecetasService {
     });
   }
 
-  async removeByPlatillo(platilloId: number): Promise<void> {
-    await this.findPlatilloOrFail(platilloId);
+  async removeByPlatillo(
+    platilloId: number,
+  ): Promise<void> {
+    await this.findPlatilloOrFail(
+      platilloId,
+    );
 
     await this.recetaRepository.delete({
       platillo: {
@@ -102,6 +123,8 @@ export class RecetasService {
   async obtenerIngredientesPorPlatillo(
     platilloId: number,
   ): Promise<RecetaIngrediente[]> {
-    return await this.findByPlatillo(platilloId);
+    return await this.findByPlatillo(
+      platilloId,
+    );
   }
 }

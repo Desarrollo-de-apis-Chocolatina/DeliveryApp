@@ -9,6 +9,7 @@ import { Platillo } from '../../menu/platillos/entities/platillo.entity';
 
 @Entity('recetas')
 export class RecetaIngrediente {
+
   @PrimaryGeneratedColumn()
   id: number;
 

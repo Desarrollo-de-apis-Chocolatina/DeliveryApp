@@ -8,12 +8,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import {ApiBearerAuth, ApiOperation, ApiResponse, ApiTags} from '@nestjs/swagger';
 import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
@@ -28,16 +23,18 @@ import { UpdatePlatilloDto } from './dto/update-platillo.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('menu/platillos')
 export class PlatillosController {
-  constructor(private readonly platillosService: PlatillosService) {}
+  constructor(
+    private readonly platillosService: PlatillosService,
+  ) {}
 
   @ApiOperation({
     summary: 'Crear un platillo',
-  })
-  @ApiResponse({
+    })
+    @ApiResponse({
     status: 201,
     description: 'Platillo creado correctamente.',
-  })
-  @Roles(Rol.ADMIN, Rol.COCINA)
+    })
+    @Roles(Rol.ADMIN, Rol.COCINA)
   @Post()
   create(@Body() createPlatilloDto: CreatePlatilloDto) {
     return this.platillosService.create(createPlatilloDto);
@@ -45,11 +42,11 @@ export class PlatillosController {
 
   @ApiOperation({
     summary: 'Listar platillos',
-  })
-  @ApiResponse({
+    })
+    @ApiResponse({
     status: 200,
     description: 'Lista de platillos.',
-  })
+    })
   @Get()
   findAll() {
     return this.platillosService.findAll();
@@ -57,15 +54,15 @@ export class PlatillosController {
 
   @ApiOperation({
     summary: 'Obtener un platillo por ID',
-  })
-  @ApiResponse({
+    })
+    @ApiResponse({
     status: 200,
     description: 'Platillo encontrado.',
-  })
-  @ApiResponse({
+    })
+    @ApiResponse({
     status: 404,
     description: 'Platillo no encontrado.',
-  })
+    })
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.platillosService.findOne(id);
@@ -73,12 +70,12 @@ export class PlatillosController {
 
   @ApiOperation({
     summary: 'Actualizar un platillo',
-  })
-  @ApiResponse({
+    })
+    @ApiResponse({
     status: 200,
     description: 'Platillo actualizado.',
-  })
-  @Roles(Rol.ADMIN, Rol.COCINA)
+    })
+    @Roles(Rol.ADMIN, Rol.COCINA)
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -89,12 +86,12 @@ export class PlatillosController {
 
   @ApiOperation({
     summary: 'Desactivar un platillo',
-  })
-  @ApiResponse({
+    })
+    @ApiResponse({
     status: 200,
     description: 'Platillo desactivado.',
-  })
-  @Roles(Rol.ADMIN, Rol.COCINA)
+    })
+    @Roles(Rol.ADMIN, Rol.COCINA)
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.platillosService.remove(id);

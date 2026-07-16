@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -26,9 +19,7 @@ export class AuthController {
 
   @Post('register')
   @Public()
-  @ApiOperation({
-    summary: 'Registrar un nuevo usuario (rol: mesero por defecto)',
-  })
+  @ApiOperation({ summary: 'Registrar un nuevo usuario (rol: mesero por defecto)' })
   @ApiResponse({ status: 201, description: 'Usuario registrado, retorna JWT' })
   @ApiResponse({ status: 409, description: 'Email ya registrado' })
   register(@Body() dto: RegisterDto) {

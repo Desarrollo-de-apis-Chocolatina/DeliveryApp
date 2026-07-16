@@ -43,7 +43,11 @@ export class AuthService {
     return this.usuariosService.findOne(userId);
   }
 
-  private generateToken(userId: string, email: string, rol: string): string {
+  private generateToken(
+    userId: string,
+    email: string,
+    rol: string,
+  ): string {
     const payload = { sub: userId, email, rol };
     return this.jwtService.sign(payload);
   }
