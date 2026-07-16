@@ -412,7 +412,7 @@ git commit -m "feat(inventario): agregar DTOs de Ingrediente con validaciones"
 - Test: `src/inventario/inventario.service.spec.ts`
 
 **Interfaces:**
-- Consumes: `Ingrediente`, `UnidadMedida` (Task 1); `CreateIngredienteDto`, `UpdateIngredienteDto`, `RegistrarCompraDto` (Task 2); `RecetasService.findByPlatillo(platilloId: number): Promise<RecetaIngrediente[]>` de `src/recetas/recetas.service.ts` (`RecetaIngrediente` tiene `ingredienteId: number`, `cantidadPorPorcion: number`); `PlatillosService.marcarNoDisponiblePorIngrediente(ingredienteId: number): Promise<void>` de `src/menu/platillos/platillos.service.ts`.
+- Consumes: `Ingrediente`, `UnidadMedida` (Task 1); `CreateIngredienteDto`, `UpdateIngredienteDto`, `RegistrarCompraDto` (Task 2); `RecetasService.findByPlatillo(platilloId: number): Promise<RecetaIngrediente[]>` de `src/recetas/recetas.service.ts` (`RecetaIngrediente` tiene `ingredienteId: number`, `cantidadPorPorcion: number`, `esIngredienteClave: boolean`); `PlatillosService.marcarNoDisponiblePorIngrediente(ingredienteId: number): Promise<void>` de `src/menu/platillos/platillos.service.ts`.
 - Produces: `export class InventarioService` con métodos `create`, `findAll`, `findOne`, `update`, `remove`, `registrarCompra`, `findAlertas`, `descontarStockDePlatillo` — usados por Task 5 (controller) y por Persona 4 (Pedidos) más adelante.
 
 Este task cubre `create`, `findAll`, `findOne`, `update`, `remove`. Los tasks 4 y 5 agregan `registrarCompra`/`findAlertas` y `descontarStockDePlatillo` sobre el mismo archivo.
@@ -816,6 +816,7 @@ git commit -m "feat(inventario): agregar registrarCompra y findAlertas"
 
 **Interfaces:**
 - Produces (agregado a `InventarioService`): `descontarStockDePlatillo(platilloId: number, cantidadPorciones: number, manager?: EntityManager): Promise<void>` — este es el método que Persona 4 (Pedidos) inyectará y llamará dentro de su propia transacción `dataSource.transaction(async manager => ...)`.
+- Regla de negocio (README, Regla 1): el platillo se marca no disponible únicamente cuando el ingrediente que llega a stock 0 está marcado como **clave** en la receta (`RecetaIngrediente.esIngredienteClave === true`, campo ya existente en `src/recetas/entities/receta-ingrediente.entity.ts`). Un ingrediente no clave que llegue a 0 se descuenta igual, pero NO dispara `marcarNoDisponiblePorIngrediente`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -873,9 +874,9 @@ Agregar al final de `src/inventario/inventario.service.spec.ts`, antes del cierr
       expect(repository.save).not.toHaveBeenCalled();
     });
 
-    it('marca el platillo no disponible cuando un ingrediente llega a stock 0', async () => {
+    it('marca el platillo no disponible cuando un ingrediente CLAVE llega a stock 0', async () => {
       recetasService.findByPlatillo.mockResolvedValue([
-        { ingredienteId: 1, cantidadPorPorcion: 5 },
+        { ingredienteId: 1, cantidadPorPorcion: 5, esIngredienteClave: true },
       ]);
       repository.findOne.mockResolvedValue({
         id: 1,
@@ -889,9 +890,25 @@ Agregar al final de `src/inventario/inventario.service.spec.ts`, antes del cierr
       expect(platillosService.marcarNoDisponiblePorIngrediente).toHaveBeenCalledWith(1);
     });
 
+    it('NO marca el platillo no disponible si el ingrediente en 0 no es clave', async () => {
+      recetasService.findByPlatillo.mockResolvedValue([
+        { ingredienteId: 1, cantidadPorPorcion: 5, esIngredienteClave: false },
+      ]);
+      repository.findOne.mockResolvedValue({
+        id: 1,
+        nombre: 'Carne',
+        stock: 5,
+        stockMinimo: 1,
+      });
+
+      await service.descontarStockDePlatillo(10, 1);
+
+      expect(platillosService.marcarNoDisponiblePorIngrediente).not.toHaveBeenCalled();
+    });
+
     it('no marca el platillo no disponible si el stock queda por encima de 0', async () => {
       recetasService.findByPlatillo.mockResolvedValue([
-        { ingredienteId: 1, cantidadPorPorcion: 1 },
+        { ingredienteId: 1, cantidadPorPorcion: 1, esIngredienteClave: true },
       ]);
       repository.findOne.mockResolvedValue({
         id: 1,
@@ -954,7 +971,11 @@ Agregar este método dentro de la clase `InventarioService` (después de `findAl
     // Primera pasada: validar que TODOS los ingredientes tengan stock
     // suficiente antes de mutar cualquiera (todo o nada, incluso sin
     // transacción externa).
-    const descuentos: { ingrediente: Ingrediente; cantidadADescontar: number }[] = [];
+    const descuentos: {
+      ingrediente: Ingrediente;
+      cantidadADescontar: number;
+      esIngredienteClave: boolean;
+    }[] = [];
 
     for (const recetaIngrediente of recetaIngredientes) {
       const cantidadADescontar =
@@ -976,16 +997,22 @@ Agregar este método dentro de la clase `InventarioService` (después de `findAl
         );
       }
 
-      descuentos.push({ ingrediente, cantidadADescontar });
+      descuentos.push({
+        ingrediente,
+        cantidadADescontar,
+        esIngredienteClave: recetaIngrediente.esIngredienteClave,
+      });
     }
 
     // Segunda pasada: aplicar los descuentos ya validados.
-    for (const { ingrediente, cantidadADescontar } of descuentos) {
+    for (const { ingrediente, cantidadADescontar, esIngredienteClave } of descuentos) {
       ingrediente.stock -= cantidadADescontar;
 
       await ingredienteRepo.save(ingrediente);
 
-      if (ingrediente.stock <= 0) {
+      // Regla 1 (README): solo los ingredientes clave disparan la
+      // indisponibilidad automática del platillo al llegar a 0.
+      if (ingrediente.stock <= 0 && esIngredienteClave) {
         await this.platillosService.marcarNoDisponiblePorIngrediente(ingrediente.id);
       }
     }
@@ -995,7 +1022,7 @@ Agregar este método dentro de la clase `InventarioService` (después de `findAl
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npm test -- inventario.service`
-Expected: PASS — 16 tests.
+Expected: PASS — 17 tests.
 
 - [ ] **Step 5: Commit**
 
