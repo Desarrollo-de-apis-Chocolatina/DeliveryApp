@@ -11,6 +11,7 @@ import { MenuModule } from './menu/menu.module';
 import { RecetasModule } from './recetas/recetas.module';
 import { CategoriasModule } from './menu/categorias/categorias.module';
 import { PlatillosModule } from './menu/platillos/platillos.module';
+import { InventarioModule } from './inventario/inventario.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -37,7 +38,7 @@ import { AppService } from './app.service';
     RecetasModule,
 
     // Los módulos de las otras personas se agregan aquí cuando los entreguen:
-    // InventarioModule,   <- Persona 3
+    InventarioModule,
     // MenuModule,         <- Persona 2
     // PedidosMesaModule,  <- Persona 4
     // PedidosDeliveryModule, <- Persona 4
