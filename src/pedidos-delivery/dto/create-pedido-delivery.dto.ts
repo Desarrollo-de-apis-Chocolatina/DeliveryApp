@@ -1,14 +1,15 @@
-import { IsString, IsNotEmpty, IsArray, ValidateNested, IsNumber, Min } from 'class-validator';
+import { IsString, IsNotEmpty, IsArray, ValidateNested, IsInt, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class DetalleDeliveryDto {
   @ApiProperty()
-  @IsNumber()
+  @IsInt()
+  @Min(1)
   platilloId: number;
 
   @ApiProperty()
-  @IsNumber()
+  @IsInt()
   @Min(1)
   cantidad: number;
 }

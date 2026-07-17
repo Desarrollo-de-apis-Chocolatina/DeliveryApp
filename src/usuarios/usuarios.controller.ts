@@ -22,6 +22,15 @@ import { Rol } from './entities/usuario.entity';
 
 @ApiTags('usuarios')
 @ApiBearerAuth('bearer')
+@ApiResponse({
+  status: 401,
+  description: 'No autenticado: falta el token JWT o es inválido.',
+})
+@ApiResponse({
+  status: 403,
+  description:
+    'Prohibido: el rol del usuario autenticado no tiene permiso para este recurso (solo admin).',
+})
 @Roles(Rol.ADMIN)
 @Controller('usuarios')
 export class UsuariosController {

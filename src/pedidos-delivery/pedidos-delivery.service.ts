@@ -47,6 +47,12 @@ export class PedidosDeliveryService {
   }
 
   async updateEstado(id: number, estado: EstadoPedidoDelivery): Promise<PedidoDelivery> {
+    if (estado === EstadoPedidoDelivery.PAGADO) {
+      throw new BadRequestException(
+        'El pedido se marca como PAGADO únicamente al registrar el cobro en POST /caja/pagos.',
+      );
+    }
+
     if (estado === EstadoPedidoDelivery.LISTO) {
       return await this.dataSource.transaction(async (manager) => {
         const pedido = await manager.findOne(PedidoDelivery, { where: { id }, relations: { detalles: true } });

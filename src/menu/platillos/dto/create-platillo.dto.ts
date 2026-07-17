@@ -1,4 +1,4 @@
-import {IsBoolean, IsInt, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, MaxLength} from 'class-validator';
+import {IsBoolean, IsInt, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, MaxLength, Min} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreatePlatilloDto {
@@ -47,5 +47,6 @@ export class CreatePlatilloDto {
     example: 1,
   })
   @IsInt()
+  @Min(1)
   categoriaId: number;
 }

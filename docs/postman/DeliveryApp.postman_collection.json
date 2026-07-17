@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "DeliveryApp - Flujo Completo",
-    "description": "Coleccion de demostracion de la API de Gestion de Restaurante con Delivery.\n\nEjecutar en orden (Run Collection). Cubre: login, inventario, menu, receta, pedido en mesa con descuento de stock (exito), escenario de inventario insuficiente (400 con rollback), cobro en caja y reportes de cierre diario y rentabilidad.\n\nVariables: baseUrl y token se autogestionan; los IDs se guardan automaticamente en cada paso.",
+    "description": "Coleccion de demostracion de la API de Gestion de Restaurante con Delivery.\n\nEjecutar en orden (Run Collection). Cubre: login, inventario, menu, receta, pedido en mesa con descuento de stock (exito), escenario de cantidad excesiva (400 con rollback), cobro en caja y reportes de cierre diario y rentabilidad.\n\nLos nombres de ingredientes, categoria y platillo llevan un sufijo {{$timestamp}} para ser unicos en cada corrida: asi la coleccion puede ejecutarse las veces que quieras (y despues de las pruebas e2e) sin chocar con registros previos por nombres repetidos.\n\nVariables: baseUrl y token se autogestionan; los IDs se guardan automaticamente en cada paso.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -11,12 +11,12 @@
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:3000/api" },
     { "key": "token", "value": "" },
-    { "key": "carneId", "value": "" },
-    { "key": "tomateId", "value": "" },
+    { "key": "ingredientePrincipalId", "value": "" },
+    { "key": "ingredienteSecundarioId", "value": "" },
     { "key": "categoriaId", "value": "" },
     { "key": "platilloId", "value": "" },
     { "key": "pedidoId", "value": "" },
-    { "key": "pedidoInsuficienteId", "value": "" },
+    { "key": "pedidoExcesivoId", "value": "" },
     { "key": "fecha", "value": "" }
   ],
   "item": [
@@ -48,14 +48,14 @@
       ]
     },
     {
-      "name": "2a. Crear ingrediente Carne (stock bajo)",
+      "name": "2a. Crear ingrediente principal (stock bajo)",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "url": { "raw": "{{baseUrl}}/inventario/ingredientes", "host": ["{{baseUrl}}"], "path": ["inventario", "ingredientes"] },
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"nombre\": \"Carne\",\n  \"unidadMedida\": \"kg\",\n  \"stock\": 5,\n  \"stockMinimo\": 1,\n  \"costoUnitario\": 8\n}"
+          "raw": "{\n  \"nombre\": \"Insumo Principal {{$timestamp}}\",\n  \"unidadMedida\": \"kg\",\n  \"stock\": 5,\n  \"stockMinimo\": 1,\n  \"costoUnitario\": 8\n}"
         }
       },
       "event": [
@@ -65,21 +65,21 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('ingrediente creado', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
-              "pm.collectionVariables.set('carneId', pm.response.json().id);"
+              "pm.collectionVariables.set('ingredientePrincipalId', pm.response.json().id);"
             ]
           }
         }
       ]
     },
     {
-      "name": "2b. Crear ingrediente Tomate",
+      "name": "2b. Crear ingrediente secundario",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "url": { "raw": "{{baseUrl}}/inventario/ingredientes", "host": ["{{baseUrl}}"], "path": ["inventario", "ingredientes"] },
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"nombre\": \"Tomate\",\n  \"unidadMedida\": \"kg\",\n  \"stock\": 10,\n  \"stockMinimo\": 2,\n  \"costoUnitario\": 2\n}"
+          "raw": "{\n  \"nombre\": \"Insumo Secundario {{$timestamp}}\",\n  \"unidadMedida\": \"kg\",\n  \"stock\": 10,\n  \"stockMinimo\": 2,\n  \"costoUnitario\": 2\n}"
         }
       },
       "event": [
@@ -89,21 +89,21 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('ingrediente creado', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
-              "pm.collectionVariables.set('tomateId', pm.response.json().id);"
+              "pm.collectionVariables.set('ingredienteSecundarioId', pm.response.json().id);"
             ]
           }
         }
       ]
     },
     {
-      "name": "3a. Crear categoria",
+      "name": "3a. Crear categoría",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "url": { "raw": "{{baseUrl}}/menu/categorias", "host": ["{{baseUrl}}"], "path": ["menu", "categorias"] },
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"nombre\": \"Hamburguesas\",\n  \"descripcion\": \"Hamburguesas gourmet\"\n}"
+          "raw": "{\n  \"nombre\": \"Categoria Demo {{$timestamp}}\",\n  \"descripcion\": \"Categoria de demostracion\"\n}"
         }
       },
       "event": [
@@ -127,7 +127,7 @@
         "url": { "raw": "{{baseUrl}}/menu/platillos", "host": ["{{baseUrl}}"], "path": ["menu", "platillos"] },
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"nombre\": \"Hamburguesa Especial\",\n  \"descripcion\": \"Doble carne con tomate\",\n  \"precio\": 12.50,\n  \"categoriaId\": {{categoriaId}}\n}"
+          "raw": "{\n  \"nombre\": \"Platillo Demo {{$timestamp}}\",\n  \"descripcion\": \"Platillo de demostracion\",\n  \"precio\": 12.50,\n  \"categoriaId\": {{categoriaId}}\n}"
         }
       },
       "event": [
@@ -155,7 +155,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"ingredientes\": [\n    { \"ingredienteId\": {{carneId}}, \"cantidadPorPorcion\": 0.2, \"esIngredienteClave\": true },\n    { \"ingredienteId\": {{tomateId}}, \"cantidadPorPorcion\": 0.05, \"esIngredienteClave\": false }\n  ]\n}"
+          "raw": "{\n  \"ingredientes\": [\n    { \"ingredienteId\": {{ingredientePrincipalId}}, \"cantidadPorPorcion\": 0.2, \"esIngredienteClave\": true },\n    { \"ingredienteId\": {{ingredienteSecundarioId}}, \"cantidadPorPorcion\": 0.05, \"esIngredienteClave\": false }\n  ]\n}"
         }
       },
       "event": [
@@ -169,7 +169,7 @@
       ]
     },
     {
-      "name": "5. Crear pedido en mesa (exito)",
+      "name": "5. Crear pedido en mesa (éxito)",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -237,7 +237,7 @@
       ]
     },
     {
-      "name": "7a. Pedido imposible (100 hamburguesas)",
+      "name": "7a. Crear pedido con cantidad excesiva",
       "request": {
         "method": "POST",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -254,21 +254,21 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('pedido creado', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
-              "pm.collectionVariables.set('pedidoInsuficienteId', pm.response.json().id);"
+              "pm.collectionVariables.set('pedidoExcesivoId', pm.response.json().id);"
             ]
           }
         }
       ]
     },
     {
-      "name": "7b. Pedido imposible -> EN_COCINA",
+      "name": "7b. Pedido excesivo -> EN_COCINA",
       "request": {
         "method": "PATCH",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "url": {
-          "raw": "{{baseUrl}}/pedidos-mesa/{{pedidoInsuficienteId}}/estado",
+          "raw": "{{baseUrl}}/pedidos-mesa/{{pedidoExcesivoId}}/estado",
           "host": ["{{baseUrl}}"],
-          "path": ["pedidos-mesa", "{{pedidoInsuficienteId}}", "estado"]
+          "path": ["pedidos-mesa", "{{pedidoExcesivoId}}", "estado"]
         },
         "body": { "mode": "raw", "raw": "{\n  \"estado\": \"EN_COCINA\"\n}" }
       },
@@ -280,14 +280,14 @@
       ]
     },
     {
-      "name": "7c. Pedido imposible -> LISTO (espera 400, rollback)",
+      "name": "7c. Pedido excesivo -> LISTO (espera 400, rollback)",
       "request": {
         "method": "PATCH",
         "header": [{ "key": "Content-Type", "value": "application/json" }],
         "url": {
-          "raw": "{{baseUrl}}/pedidos-mesa/{{pedidoInsuficienteId}}/estado",
+          "raw": "{{baseUrl}}/pedidos-mesa/{{pedidoExcesivoId}}/estado",
           "host": ["{{baseUrl}}"],
-          "path": ["pedidos-mesa", "{{pedidoInsuficienteId}}", "estado"]
+          "path": ["pedidos-mesa", "{{pedidoExcesivoId}}", "estado"]
         },
         "body": { "mode": "raw", "raw": "{\n  \"estado\": \"LISTO\"\n}" }
       },
@@ -305,13 +305,13 @@
       ]
     },
     {
-      "name": "7d. Verificar que el stock de Carne NO cambio (rollback)",
+      "name": "7d. Verificar que el stock no cambió (rollback)",
       "request": {
         "method": "GET",
         "url": {
-          "raw": "{{baseUrl}}/inventario/ingredientes/{{carneId}}",
+          "raw": "{{baseUrl}}/inventario/ingredientes/{{ingredientePrincipalId}}",
           "host": ["{{baseUrl}}"],
-          "path": ["inventario", "ingredientes", "{{carneId}}"]
+          "path": ["inventario", "ingredientes", "{{ingredientePrincipalId}}"]
         }
       },
       "event": [
@@ -321,9 +321,9 @@
             "type": "text/javascript",
             "exec": [
               "pm.test('ok', () => pm.response.to.have.status(200));",
-              "// Tras el pedido exitoso (2 uds * 0.2kg = 0.4kg) el stock deberia ser 5 - 0.4 = 4.6,",
-              "// y el pedido imposible no debe haberlo tocado (rollback).",
-              "pm.test('stock de Carne = 4.6 (no corrompido)', () => pm.expect(Number(pm.response.json().stock)).to.eql(4.6));"
+              "// Tras el pedido exitoso (2 uds * 0.2 = 0.4) el stock queda en 5 - 0.4 = 4.6,",
+              "// y el pedido excesivo no debe haberlo tocado (rollback).",
+              "pm.test('stock del insumo principal = 4.6 (no corrompido)', () => pm.expect(Number(pm.response.json().stock)).to.eql(4.6));"
             ]
           }
         }

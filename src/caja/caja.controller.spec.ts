@@ -33,10 +33,10 @@ describe('CajaController', () => {
     expect(service.registrarPago).toHaveBeenCalledWith(dto, 'cajero-uuid');
   });
 
-  it('cierreDiario delega en el service con la fecha', async () => {
+  it('cierreDiario delega en el service con la fecha del query', async () => {
     service.cierreDiario.mockResolvedValue({ fecha: '2026-07-16' });
 
-    await controller.cierreDiario('2026-07-16');
+    await controller.cierreDiario({ fecha: '2026-07-16' });
 
     expect(service.cierreDiario).toHaveBeenCalledWith('2026-07-16');
   });

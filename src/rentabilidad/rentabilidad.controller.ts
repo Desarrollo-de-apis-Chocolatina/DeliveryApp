@@ -6,6 +6,15 @@ import { Rol } from '../usuarios/entities/usuario.entity';
 
 @ApiTags('rentabilidad')
 @ApiBearerAuth('bearer')
+@ApiResponse({
+  status: 401,
+  description: 'No autenticado: falta el token JWT o es inválido.',
+})
+@ApiResponse({
+  status: 403,
+  description:
+    'Prohibido: el rol del usuario autenticado no tiene permiso (solo ADMIN o CAJERO).',
+})
 @Controller('rentabilidad')
 export class RentabilidadController {
   constructor(private readonly rentabilidadService: RentabilidadService) {}

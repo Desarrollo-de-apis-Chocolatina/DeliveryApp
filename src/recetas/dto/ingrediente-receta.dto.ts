@@ -3,6 +3,7 @@ import {
   IsInt,
   IsNumber,
   IsPositive,
+  Min,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -14,6 +15,7 @@ export class IngredienteRecetaDto {
   @IsInt({
     message: 'El ID del ingrediente debe ser un número entero.',
   })
+  @Min(1)
   ingredienteId: number;
 
   @ApiProperty({

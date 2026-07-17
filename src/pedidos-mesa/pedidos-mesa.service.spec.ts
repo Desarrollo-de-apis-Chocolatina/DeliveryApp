@@ -5,6 +5,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { PedidosMesaService } from './pedidos-mesa.service';
 import { PedidoMesa, EstadoPedidoMesa } from './entities/pedido-mesa.entity';
 import { InventarioService } from '../inventario/inventario.service';
+import { DetalleDto } from './dto/create-pedido-mesa.dto';
 
 describe('PedidosMesaService', () => {
   let service: PedidosMesaService;
@@ -183,6 +184,59 @@ describe('PedidosMesaService', () => {
     });
   });
 
+  describe('agregarDetalles', () => {
+    const detalles: DetalleDto[] = [{ platilloId: 9, cantidad: 2 }];
+
+    it('agrega detalles a un pedido TOMADO existente de la mesa (mismo pedidoId)', async () => {
+      const pedidoExistente = { id: 4, numeroMesa: 5, estado: EstadoPedidoMesa.TOMADO, detalles: [] };
+      const platillo = { id: 9, disponible: true, precio: 7.5 };
+      manager.findOne
+        .mockResolvedValueOnce(pedidoExistente) // busca pedido abierto
+        .mockResolvedValueOnce(platillo); // busca platillo
+
+      const resultado = await service.agregarDetalles(5, detalles);
+
+      expect(resultado.id).toBe(4);
+      expect(resultado.detalles).toHaveLength(1);
+      expect(resultado.detalles[0]).toMatchObject({ cantidad: 2, precioUnitario: 7.5 });
+      expect(manager.save).toHaveBeenCalledWith(pedidoExistente);
+    });
+
+    it('agrega detalles a un pedido EN_COCINA existente de la mesa', async () => {
+      const pedidoExistente = { id: 4, numeroMesa: 5, estado: EstadoPedidoMesa.EN_COCINA, detalles: [] };
+      const platillo = { id: 9, disponible: true, precio: 7.5 };
+      manager.findOne
+        .mockResolvedValueOnce(pedidoExistente)
+        .mockResolvedValueOnce(platillo);
+
+      const resultado = await service.agregarDetalles(5, detalles);
+
+      expect(resultado.estado).toBe(EstadoPedidoMesa.EN_COCINA);
+      expect(manager.save).toHaveBeenCalledWith(pedidoExistente);
+    });
+
+    it('lanza NotFoundException si no hay pedido abierto para esa mesa', async () => {
+      manager.findOne.mockResolvedValueOnce(null);
+
+      await expect(service.agregarDetalles(5, detalles)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(manager.save).not.toHaveBeenCalled();
+    });
+
+    it('lanza BadRequestException si un platillo no existe o no está disponible', async () => {
+      const pedidoExistente = { id: 4, numeroMesa: 5, estado: EstadoPedidoMesa.TOMADO, detalles: [] };
+      manager.findOne
+        .mockResolvedValueOnce(pedidoExistente)
+        .mockResolvedValueOnce({ id: 9, disponible: false, precio: 7.5 });
+
+      await expect(service.agregarDetalles(5, detalles)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(manager.save).not.toHaveBeenCalled();
+    });
+  });
+
   describe('updateEstado (otros estados)', () => {
     it('cambia el estado sin transacción ni descuento de stock', async () => {
       const pedido = { id: 1, estado: EstadoPedidoMesa.LISTO };
@@ -206,6 +260,15 @@ describe('PedidosMesaService', () => {
         service.updateEstado(99, EstadoPedidoMesa.ENTREGADO),
       ).rejects.toThrow(NotFoundException);
       expect(pedidoRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('lanza BadRequestException al intentar marcar PAGADO directamente (debe hacerse vía POST /caja/pagos)', async () => {
+      await expect(
+        service.updateEstado(1, EstadoPedidoMesa.PAGADO),
+      ).rejects.toThrow(BadRequestException);
+      expect(pedidoRepository.findOne).not.toHaveBeenCalled();
+      expect(pedidoRepository.save).not.toHaveBeenCalled();
+      expect(dataSource.transaction).not.toHaveBeenCalled();
     });
   });
 });

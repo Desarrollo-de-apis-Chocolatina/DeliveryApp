@@ -1,7 +1,8 @@
 import { Controller, Post, Body, Get, Patch, Param, UseGuards, ParseIntPipe, Req } from '@nestjs/common';
 import { PedidosMesaService } from './pedidos-mesa.service';
 import { CreatePedidoMesaDto } from './dto/create-pedido-mesa.dto';
-import { EstadoPedidoMesa } from './entities/pedido-mesa.entity';
+import { CambiarEstadoMesaDto } from './dto/cambiar-estado.dto';
+import { AgregarDetallesDto } from './dto/agregar-detalles.dto';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -46,16 +47,42 @@ export class PedidosMesaController {
   @ApiOperation({
     summary: 'Actualizar el estado de un pedido de mesa',
     description:
-      'Cambia el estado del pedido de mesa identificado por su ID (por ejemplo: EN_COCINA, LISTO, ENTREGADO, PAGADO).',
+      'Cambia el estado del pedido de mesa identificado por su ID (TOMADO, EN_COCINA, LISTO, ENTREGADO). El estado PAGADO no se puede fijar aquí: se marca automáticamente al registrar el cobro en POST /caja/pagos.',
   })
   @ApiResponse({ status: 200, description: 'Estado del pedido actualizado.' })
-  @ApiResponse({ status: 400, description: 'Estado inválido.' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Estado inválido, o se intentó fijar PAGADO directamente (debe hacerse vía POST /caja/pagos).',
+  })
   @ApiResponse({ status: 401, description: 'No autenticado.' })
   @ApiResponse({ status: 403, description: 'No autorizado para esta acción.' })
   @ApiResponse({ status: 404, description: 'Pedido de mesa no encontrado.' })
   @Patch(':id/estado')
   @Roles(Rol.MESERO, Rol.COCINA, Rol.ADMIN)
-  updateEstado(@Param('id', ParseIntPipe) id: number, @Body('estado') estado: EstadoPedidoMesa) {
-    return this.pedidosMesaService.updateEstado(id, estado);
+  updateEstado(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CambiarEstadoMesaDto,
+  ) {
+    return this.pedidosMesaService.updateEstado(id, dto.estado);
+  }
+
+  @ApiOperation({
+    summary: 'Agregar platillos a un pedido abierto de la mesa (misma cuenta)',
+    description:
+      'Si la mesa ya tiene un pedido en estado TOMADO o EN_COCINA, le agrega los platillos indicados (mismo pedidoId) en vez de crear un pedido nuevo. No aplica una vez el pedido pasa a LISTO.',
+  })
+  @ApiResponse({ status: 200, description: 'Detalles agregados al pedido existente.' })
+  @ApiResponse({ status: 400, description: 'Platillo no disponible.' })
+  @ApiResponse({ status: 401, description: 'No autenticado.' })
+  @ApiResponse({ status: 403, description: 'No autorizado para esta acción.' })
+  @ApiResponse({ status: 404, description: 'No hay pedido abierto para esa mesa.' })
+  @Patch('mesa/:numeroMesa/detalles')
+  @Roles(Rol.MESERO, Rol.ADMIN)
+  agregarDetalles(
+    @Param('numeroMesa', ParseIntPipe) numeroMesa: number,
+    @Body() dto: AgregarDetallesDto,
+  ) {
+    return this.pedidosMesaService.agregarDetalles(numeroMesa, dto.detalles);
   }
 }

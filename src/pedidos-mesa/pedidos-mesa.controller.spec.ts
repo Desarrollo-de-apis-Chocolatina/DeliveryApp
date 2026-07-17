@@ -9,6 +9,7 @@ describe('PedidosMesaController', () => {
     create: jest.Mock;
     findAll: jest.Mock;
     updateEstado: jest.Mock;
+    agregarDetalles: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -16,6 +17,7 @@ describe('PedidosMesaController', () => {
       create: jest.fn(),
       findAll: jest.fn(),
       updateEstado: jest.fn(),
+      agregarDetalles: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -41,9 +43,17 @@ describe('PedidosMesaController', () => {
     expect(service.findAll).toHaveBeenCalled();
   });
 
-  it('updateEstado delega en el service con el id y el estado', () => {
-    controller.updateEstado(7, EstadoPedidoMesa.LISTO);
+  it('updateEstado delega en el service con el id y el estado del dto', () => {
+    controller.updateEstado(7, { estado: EstadoPedidoMesa.LISTO });
 
     expect(service.updateEstado).toHaveBeenCalledWith(7, EstadoPedidoMesa.LISTO);
+  });
+
+  it('agregarDetalles delega en el service con el número de mesa y los detalles', () => {
+    const dto = { detalles: [{ platilloId: 9, cantidad: 2 }] };
+
+    controller.agregarDetalles(5, dto);
+
+    expect(service.agregarDetalles).toHaveBeenCalledWith(5, dto.detalles);
   });
 });

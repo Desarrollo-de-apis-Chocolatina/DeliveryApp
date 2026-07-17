@@ -5,7 +5,7 @@ import { CanalPedido, TipoPago } from '../entities/pago.entity';
 export class RegistrarPagoDto {
   @ApiProperty({
     enum: CanalPedido,
-    description: 'Canal del pedido a cobrar (mesa o delivery).',
+    description: 'Canal del pedido a cobrar. Valores posibles: MESA, DELIVERY.',
     example: CanalPedido.MESA,
   })
   @IsEnum(CanalPedido)
@@ -21,7 +21,8 @@ export class RegistrarPagoDto {
 
   @ApiProperty({
     enum: TipoPago,
-    description: 'Medio de pago con el que se cobró.',
+    description:
+      'Medio de pago con el que se cobró. Valores posibles: EFECTIVO, TARJETA, TRANSFERENCIA.',
     example: TipoPago.TARJETA,
   })
   @IsEnum(TipoPago)

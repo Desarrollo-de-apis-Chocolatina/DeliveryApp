@@ -1,9 +1,9 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { PedidoMesa, EstadoPedidoMesa } from './entities/pedido-mesa.entity';
 import { DetallePedidoMesa } from './entities/detalle-pedido-mesa.entity';
-import { CreatePedidoMesaDto } from './dto/create-pedido-mesa.dto';
+import { CreatePedidoMesaDto, DetalleDto } from './dto/create-pedido-mesa.dto';
 import { Usuario } from '../usuarios/entities/usuario.entity';
 import { Platillo } from '../menu/platillos/entities/platillo.entity';
 import { InventarioService } from '../inventario/inventario.service';
@@ -44,11 +44,57 @@ export class PedidosMesaService {
     });
   }
 
+  /**
+   * Agrega platillos a un pedido de mesa ya abierto (TOMADO o EN_COCINA), en
+   * vez de crear un pedido nuevo. Así los platillos pedidos en distintas
+   * rondas de la misma mesa quedan bajo un único pedidoId (una sola cuenta).
+   * Una vez el pedido pasa a LISTO su inventario ya se descontó, por lo que
+   * ya no se le pueden agregar más platillos.
+   */
+  async agregarDetalles(numeroMesa: number, detalles: DetalleDto[]): Promise<PedidoMesa> {
+    return await this.dataSource.transaction(async (manager) => {
+      const pedido = await manager.findOne(PedidoMesa, {
+        where: {
+          numeroMesa,
+          estado: In([EstadoPedidoMesa.TOMADO, EstadoPedidoMesa.EN_COCINA]),
+        },
+        relations: { detalles: true },
+      });
+      if (!pedido) {
+        throw new NotFoundException(
+          `No hay un pedido abierto para la mesa ${numeroMesa}`,
+        );
+      }
+
+      for (const det of detalles) {
+        const platillo = await manager.findOne(Platillo, { where: { id: det.platilloId } });
+        if (!platillo || !platillo.disponible) {
+          throw new BadRequestException(`Platillo ${det.platilloId} no disponible`);
+        }
+        const detalle = manager.create(DetallePedidoMesa, {
+          pedido,
+          platillo,
+          cantidad: det.cantidad,
+          precioUnitario: platillo.precio,
+        });
+        pedido.detalles.push(detalle);
+      }
+
+      return await manager.save(pedido);
+    });
+  }
+
   async findAll(): Promise<PedidoMesa[]> {
     return await this.pedidoRepository.find();
   }
 
   async updateEstado(id: number, estado: EstadoPedidoMesa): Promise<PedidoMesa> {
+    if (estado === EstadoPedidoMesa.PAGADO) {
+      throw new BadRequestException(
+        'El pedido se marca como PAGADO únicamente al registrar el cobro en POST /caja/pagos.',
+      );
+    }
+
     if (estado === EstadoPedidoMesa.LISTO) {
       return await this.dataSource.transaction(async (manager) => {
         const pedido = await manager.findOne(PedidoMesa, { where: { id }, relations: { detalles: true } });

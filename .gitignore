@@ -38,3 +38,6 @@ lerna-debug.log*
 
 # git worktrees (workspaces aislados para desarrollo)
 /.worktrees
+
+.claude
+.copilot

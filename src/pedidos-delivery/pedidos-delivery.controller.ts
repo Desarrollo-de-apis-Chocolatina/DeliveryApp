@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Get, Patch, Param, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { PedidosDeliveryService } from './pedidos-delivery.service';
 import { CreatePedidoDeliveryDto } from './dto/create-pedido-delivery.dto';
-import { EstadoPedidoDelivery } from './entities/pedido-delivery.entity';
+import { CambiarEstadoDeliveryDto } from './dto/cambiar-estado.dto';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -48,17 +48,24 @@ export class PedidosDeliveryController {
   @ApiOperation({
     summary: 'Actualizar el estado de un pedido de delivery',
     description:
-      'Cambia el estado del pedido de delivery identificado por su ID (por ejemplo: EN_COCINA, LISTO, EN_CAMINO, ENTREGADO, PAGADO).',
+      'Cambia el estado del pedido de delivery identificado por su ID (TOMADO, EN_COCINA, LISTO, EN_CAMINO, ENTREGADO). El estado PAGADO no se puede fijar aquí: se marca automáticamente al registrar el cobro en POST /caja/pagos.',
   })
   @ApiResponse({ status: 200, description: 'Estado del pedido actualizado.' })
-  @ApiResponse({ status: 400, description: 'Estado inválido.' })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Estado inválido, o se intentó fijar PAGADO directamente (debe hacerse vía POST /caja/pagos).',
+  })
   @ApiResponse({ status: 401, description: 'No autenticado.' })
   @ApiResponse({ status: 403, description: 'No autorizado para esta acción.' })
   @ApiResponse({ status: 404, description: 'Pedido de delivery no encontrado.' })
   @Patch(':id/estado')
   @Roles(Rol.CAJERO, Rol.COCINA, Rol.REPARTIDOR, Rol.ADMIN)
-  updateEstado(@Param('id', ParseIntPipe) id: number, @Body('estado') estado: EstadoPedidoDelivery) {
-    return this.pedidosDeliveryService.updateEstado(id, estado);
+  updateEstado(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CambiarEstadoDeliveryDto,
+  ) {
+    return this.pedidosDeliveryService.updateEstado(id, dto.estado);
   }
 
   @ApiOperation({

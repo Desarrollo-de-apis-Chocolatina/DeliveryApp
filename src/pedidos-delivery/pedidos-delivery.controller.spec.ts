@@ -47,8 +47,8 @@ describe('PedidosDeliveryController', () => {
     expect(service.findAll).toHaveBeenCalled();
   });
 
-  it('updateEstado delega en el service con el id y el estado', () => {
-    controller.updateEstado(7, EstadoPedidoDelivery.LISTO);
+  it('updateEstado delega en el service con el id y el estado del dto', () => {
+    controller.updateEstado(7, { estado: EstadoPedidoDelivery.LISTO });
 
     expect(service.updateEstado).toHaveBeenCalledWith(
       7,

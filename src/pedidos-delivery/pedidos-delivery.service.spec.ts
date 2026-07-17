@@ -192,6 +192,15 @@ describe('PedidosDeliveryService', () => {
         service.updateEstado(99, EstadoPedidoDelivery.ENTREGADO),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it('lanza BadRequestException al intentar marcar PAGADO directamente (debe hacerse vía POST /caja/pagos)', async () => {
+      await expect(
+        service.updateEstado(1, EstadoPedidoDelivery.PAGADO),
+      ).rejects.toThrow(BadRequestException);
+      expect(pedidoRepository.findOne).not.toHaveBeenCalled();
+      expect(pedidoRepository.save).not.toHaveBeenCalled();
+      expect(dataSource.transaction).not.toHaveBeenCalled();
+    });
   });
 
   describe('assignRepartidor', () => {

@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, Matches, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateCategoriaDto {
@@ -10,6 +10,9 @@ export class CreateCategoriaDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
+  @Matches(/[A-Za-zÁÉÍÓÚáéíóúÑñ]/, {
+    message: 'El nombre debe contener al menos una letra.',
+  })
   nombre: string;
 
   @ApiPropertyOptional({

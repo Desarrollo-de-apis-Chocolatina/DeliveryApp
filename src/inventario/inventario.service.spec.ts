@@ -221,6 +221,25 @@ describe('InventarioService', () => {
       );
     });
 
+    it('descuenta el stock aunque el resultado quede por debajo del stockMinimo (el mínimo solo alerta, no bloquea)', async () => {
+      recetasService.findByPlatillo.mockResolvedValue([
+        { ingredienteId: 1, cantidadPorPorcion: 1 },
+      ]);
+      // stock=5, stockMinimo=4: al descontar 3 el resultado (2) queda bajo el mínimo.
+      repository.findOne.mockResolvedValue({
+        id: 1,
+        nombre: 'Carne',
+        stock: 5,
+        stockMinimo: 4,
+      });
+
+      await service.descontarStockDePlatillo(10, 3);
+
+      expect(repository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 1, stock: 2 }),
+      );
+    });
+
     it('lanza BadRequestException si algún ingrediente no tiene stock suficiente y no guarda nada', async () => {
       recetasService.findByPlatillo.mockResolvedValue([
         { ingredienteId: 1, cantidadPorPorcion: 10 },

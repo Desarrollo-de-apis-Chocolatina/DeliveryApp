@@ -164,5 +164,19 @@ describe('CajaService', () => {
       expect(reporte.ventasDiaAnterior).toBe(0);
       expect(reporte.variacionPct).toBeNull();
     });
+
+    it('lanza BadRequestException si la fecha es futura', async () => {
+      await expect(service.cierreDiario('2099-12-31')).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(pagoRepository.find).not.toHaveBeenCalled();
+    });
+
+    it('lanza BadRequestException si la fecha no es un calendario válido', async () => {
+      await expect(service.cierreDiario('2026-13-40')).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(pagoRepository.find).not.toHaveBeenCalled();
+    });
   });
 });

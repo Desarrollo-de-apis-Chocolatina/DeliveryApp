@@ -78,6 +78,8 @@ export class CajaService {
    * propinas, desglose por tipo de pago y comparativa vs el día anterior.
    */
   async cierreDiario(fecha: string): Promise<CierreDiarioDto> {
+    this.validarFechaCierre(fecha);
+
     const pagosHoy = await this.buscarPagosDelDia(fecha);
     const pagosAyer = await this.buscarPagosDelDia(this.diaAnterior(fecha));
 
@@ -105,6 +107,23 @@ export class CajaService {
           ? null
           : ((ventasTotales - ventasDiaAnterior) / ventasDiaAnterior) * 100,
     };
+  }
+
+  /**
+   * Valida que `fecha` sea un día de calendario real (rechaza cosas como
+   * "2026-13-40", que el `@Matches` del DTO no detecta) y que no sea futura.
+   * El formato YYYY-MM-DD ya lo garantiza `CierreDiarioQueryDto`.
+   */
+  private validarFechaCierre(fecha: string): void {
+    const fechaComoDate = new Date(`${fecha}T00:00:00.000`);
+    if (Number.isNaN(fechaComoDate.getTime())) {
+      throw new BadRequestException('La fecha indicada no es válida.');
+    }
+
+    const hoy = new Date().toISOString().slice(0, 10);
+    if (fecha > hoy) {
+      throw new BadRequestException('La fecha no puede ser futura.');
+    }
   }
 
   private async buscarPagosDelDia(fecha: string): Promise<Pago[]> {
