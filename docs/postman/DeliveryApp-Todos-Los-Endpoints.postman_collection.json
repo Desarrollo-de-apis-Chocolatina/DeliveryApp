@@ -1,0 +1,905 @@
+{
+  "info": {
+    "name": "DeliveryApp - Todos los Endpoints",
+    "description": "Coleccion de referencia con TODOS los endpoints del proyecto (41 en total), organizada en carpetas por modulo en el mismo orden de dependencias que usa la API: auth, usuarios, inventario, menu (categorias y platillos), recetas, repartidores, pedidos-mesa, pedidos-delivery, caja y rentabilidad.\n\nA diferencia de la coleccion 'DeliveryApp.postman_collection.json' (que solo demuestra el flujo de negocio principal), esta coleccion recorre cada endpoint disponible al menos una vez, incluyendo las operaciones CRUD completas (crear, listar, obtener por ID, actualizar y eliminar) donde existen.\n\nSe puede ejecutar completa con 'Run Collection': cada carpeta encadena con la siguiente mediante variables (IDs creados). Los nombres/emails usan {{$timestamp}} para que la coleccion sea repetible sin chocar por valores unicos duplicados.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api" },
+    { "key": "token", "value": "" },
+    { "key": "fecha", "value": "" },
+    { "key": "usuarioTempId", "value": "" },
+    { "key": "ingredienteId", "value": "" },
+    { "key": "ingredienteTempId", "value": "" },
+    { "key": "categoriaId", "value": "" },
+    { "key": "categoriaTempId", "value": "" },
+    { "key": "platilloId", "value": "" },
+    { "key": "platilloTempId", "value": "" },
+    { "key": "repartidorId", "value": "" },
+    { "key": "pedidoMesaId", "value": "" },
+    { "key": "numeroMesaB", "value": "" },
+    { "key": "pedidoDeliveryId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "01. Auth",
+      "item": [
+        {
+          "name": "Registrar usuario público (rol mesero por defecto)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario Demo\",\n  \"email\": \"demo{{$timestamp}}@delivery.com\",\n  \"password\": \"demo1234\",\n  \"telefono\": \"+503 7000-0000\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('registro 201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (admin) - obtiene token para el resto de la colección",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@delivery.com\",\n  \"password\": \"admin123\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('token', body.access_token);",
+                  "pm.collectionVariables.set('fecha', new Date().toISOString().slice(0, 10));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Obtener perfil del usuario autenticado",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/auth/profile", "host": ["{{baseUrl}}"], "path": ["auth", "profile"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('profile 200', () => pm.response.to.have.status(200));"] }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02. Usuarios (solo admin)",
+      "item": [
+        {
+          "name": "Crear usuario",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/usuarios", "host": ["{{baseUrl}}"], "path": ["usuarios"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Empleado Demo\",\n  \"email\": \"empleado{{$timestamp}}@delivery.com\",\n  \"password\": \"empleado123\",\n  \"rol\": \"cocina\",\n  \"telefono\": \"+503 7000-0001\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('usuario creado', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.collectionVariables.set('usuarioTempId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar usuarios",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/usuarios", "host": ["{{baseUrl}}"], "path": ["usuarios"] } },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Obtener usuario por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/{{usuarioTempId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["usuarios", "{{usuarioTempId}}"]
+            }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Actualizar usuario",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/{{usuarioTempId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["usuarios", "{{usuarioTempId}}"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Empleado Demo Actualizado\"\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Desactivar usuario (soft delete)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/usuarios/{{usuarioTempId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["usuarios", "{{usuarioTempId}}"]
+            }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03. Inventario",
+      "item": [
+        {
+          "name": "Crear ingrediente",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/inventario/ingredientes", "host": ["{{baseUrl}}"], "path": ["inventario", "ingredientes"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ingrediente Demo {{$timestamp}}\",\n  \"unidadMedida\": \"kg\",\n  \"stock\": 20,\n  \"stockMinimo\": 5,\n  \"costoUnitario\": 3\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('creado', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.collectionVariables.set('ingredienteId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar ingredientes",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/inventario/ingredientes", "host": ["{{baseUrl}}"], "path": ["inventario", "ingredientes"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Listar ingredientes en alerta (stock bajo mínimo)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/inventario/ingredientes/alertas",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventario", "ingredientes", "alertas"]
+            }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Obtener ingrediente por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/inventario/ingredientes/{{ingredienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventario", "ingredientes", "{{ingredienteId}}"]
+            }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Actualizar ingrediente (stockMinimo)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventario/ingredientes/{{ingredienteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventario", "ingredientes", "{{ingredienteId}}"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"stockMinimo\": 6\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Registrar compra (recalcula costo promedio ponderado)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventario/ingredientes/{{ingredienteId}}/compra",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventario", "ingredientes", "{{ingredienteId}}", "compra"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"cantidad\": 10,\n  \"costoUnitario\": 3.5\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('compra registrada', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear ingrediente temporal (para eliminar)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/inventario/ingredientes", "host": ["{{baseUrl}}"], "path": ["inventario", "ingredientes"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ingrediente Temporal {{$timestamp}}\",\n  \"unidadMedida\": \"unidad\",\n  \"stockMinimo\": 1\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('creado', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.collectionVariables.set('ingredienteTempId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar ingrediente (soft delete)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/inventario/ingredientes/{{ingredienteTempId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventario", "ingredientes", "{{ingredienteTempId}}"]
+            }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04. Menu - Categorías",
+      "item": [
+        {
+          "name": "Crear categoría",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/menu/categorias", "host": ["{{baseUrl}}"], "path": ["menu", "categorias"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Categoria Demo {{$timestamp}}\",\n  \"descripcion\": \"Categoria de demostracion\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('creada', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.collectionVariables.set('categoriaId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar categorías",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/menu/categorias", "host": ["{{baseUrl}}"], "path": ["menu", "categorias"] } },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Obtener categoría por ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/menu/categorias/{{categoriaId}}", "host": ["{{baseUrl}}"], "path": ["menu", "categorias", "{{categoriaId}}"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Actualizar categoría",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/menu/categorias/{{categoriaId}}", "host": ["{{baseUrl}}"], "path": ["menu", "categorias", "{{categoriaId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"descripcion\": \"Descripcion actualizada\"\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Crear categoría temporal (para eliminar)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/menu/categorias", "host": ["{{baseUrl}}"], "path": ["menu", "categorias"] },
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Categoria Temporal {{$timestamp}}\"\n}" }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('creada', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.collectionVariables.set('categoriaTempId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar categoría (soft delete)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/menu/categorias/{{categoriaTempId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["menu", "categorias", "{{categoriaTempId}}"]
+            }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05. Menu - Platillos",
+      "item": [
+        {
+          "name": "Crear platillo",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/menu/platillos", "host": ["{{baseUrl}}"], "path": ["menu", "platillos"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Platillo Demo {{$timestamp}}\",\n  \"descripcion\": \"Platillo de demostracion\",\n  \"precio\": 12.50,\n  \"categoriaId\": {{categoriaId}}\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('creado', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.collectionVariables.set('platilloId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar platillos",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/menu/platillos", "host": ["{{baseUrl}}"], "path": ["menu", "platillos"] } },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Obtener platillo por ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/menu/platillos/{{platilloId}}", "host": ["{{baseUrl}}"], "path": ["menu", "platillos", "{{platilloId}}"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Actualizar platillo",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/menu/platillos/{{platilloId}}", "host": ["{{baseUrl}}"], "path": ["menu", "platillos", "{{platilloId}}"] },
+            "body": { "mode": "raw", "raw": "{\n  \"precio\": 13.00\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Crear platillo temporal (para eliminar)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/menu/platillos", "host": ["{{baseUrl}}"], "path": ["menu", "platillos"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Platillo Temporal {{$timestamp}}\",\n  \"precio\": 5,\n  \"categoriaId\": {{categoriaId}}\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('creado', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.collectionVariables.set('platilloTempId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar platillo (soft delete)",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/menu/platillos/{{platilloTempId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["menu", "platillos", "{{platilloTempId}}"]
+            }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06. Recetas",
+      "item": [
+        {
+          "name": "Crear/reemplazar receta del platillo",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/recetas/platillo/{{platilloId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["recetas", "platillo", "{{platilloId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ingredientes\": [\n    { \"ingredienteId\": {{ingredienteId}}, \"cantidadPorPorcion\": 0.2, \"esIngredienteClave\": true }\n  ]\n}"
+            }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('201', () => pm.response.to.have.status(201));"] } }
+          ]
+        },
+        {
+          "name": "Obtener receta del platillo",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/recetas/platillo/{{platilloId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["recetas", "platillo", "{{platilloId}}"]
+            }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Crear receta en platillo temporal (para eliminar)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/recetas/platillo/{{platilloTempId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["recetas", "platillo", "{{platilloTempId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ingredientes\": [\n    { \"ingredienteId\": {{ingredienteId}}, \"cantidadPorPorcion\": 0.1, \"esIngredienteClave\": false }\n  ]\n}"
+            }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('201', () => pm.response.to.have.status(201));"] } }
+          ]
+        },
+        {
+          "name": "Eliminar receta del platillo temporal",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/recetas/platillo/{{platilloTempId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["recetas", "platillo", "{{platilloTempId}}"]
+            }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07. Repartidores (solo admin)",
+      "item": [
+        {
+          "name": "Crear repartidor",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/repartidores", "host": ["{{baseUrl}}"], "path": ["repartidores"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Repartidor Demo\",\n  \"email\": \"repartidor{{$timestamp}}@delivery.com\",\n  \"password\": \"repartidor123\",\n  \"telefono\": \"+503 7000-0002\",\n  \"vehiculo\": \"Moto\",\n  \"placa\": \"P{{$timestamp}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('creado', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.collectionVariables.set('repartidorId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar repartidores",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/repartidores", "host": ["{{baseUrl}}"], "path": ["repartidores"] } },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "08. Pedidos - Mesa",
+      "item": [
+        {
+          "name": "Crear pedido de mesa",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/pedidos-mesa", "host": ["{{baseUrl}}"], "path": ["pedidos-mesa"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroMesa\": {{$timestamp}},\n  \"detalles\": [\n    { \"platilloId\": {{platilloId}}, \"cantidad\": 1 }\n  ]\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('creado', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('pedidoMesaId', body.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar pedidos de mesa",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/pedidos-mesa", "host": ["{{baseUrl}}"], "path": ["pedidos-mesa"] } },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Cambiar estado -> EN_COCINA",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/pedidos-mesa/{{pedidoMesaId}}/estado",
+              "host": ["{{baseUrl}}"],
+              "path": ["pedidos-mesa", "{{pedidoMesaId}}", "estado"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"EN_COCINA\"\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Cambiar estado -> LISTO (descuenta stock)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/pedidos-mesa/{{pedidoMesaId}}/estado",
+              "host": ["{{baseUrl}}"],
+              "path": ["pedidos-mesa", "{{pedidoMesaId}}", "estado"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"LISTO\"\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Crear un segundo pedido de mesa (queda TOMADO)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/pedidos-mesa", "host": ["{{baseUrl}}"], "path": ["pedidos-mesa"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numeroMesa\": {{$timestamp}},\n  \"detalles\": [\n    { \"platilloId\": {{platilloId}}, \"cantidad\": 1 }\n  ]\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('creado', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('numeroMesaB', body.numeroMesa);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agregar platillos a un pedido abierto de la mesa (misma cuenta)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/pedidos-mesa/mesa/{{numeroMesaB}}/detalles",
+              "host": ["{{baseUrl}}"],
+              "path": ["pedidos-mesa", "mesa", "{{numeroMesaB}}", "detalles"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"detalles\": [\n    { \"platilloId\": {{platilloId}}, \"cantidad\": 1 }\n  ]\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('el pedido acumula 2 detalles', () => pm.expect(pm.response.json().detalles.length).to.eql(2));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "09. Pedidos - Delivery",
+      "item": [
+        {
+          "name": "Crear pedido de delivery",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/pedidos-delivery", "host": ["{{baseUrl}}"], "path": ["pedidos-delivery"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direccion\": \"Calle Demo 123\",\n  \"detalles\": [\n    { \"platilloId\": {{platilloId}}, \"cantidad\": 1 }\n  ]\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('creado', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.collectionVariables.set('pedidoDeliveryId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar pedidos de delivery",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/pedidos-delivery", "host": ["{{baseUrl}}"], "path": ["pedidos-delivery"] } },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Cambiar estado -> EN_COCINA",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/pedidos-delivery/{{pedidoDeliveryId}}/estado",
+              "host": ["{{baseUrl}}"],
+              "path": ["pedidos-delivery", "{{pedidoDeliveryId}}", "estado"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"EN_COCINA\"\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Cambiar estado -> LISTO (descuenta stock)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/pedidos-delivery/{{pedidoDeliveryId}}/estado",
+              "host": ["{{baseUrl}}"],
+              "path": ["pedidos-delivery", "{{pedidoDeliveryId}}", "estado"]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"LISTO\"\n}" }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        },
+        {
+          "name": "Asignar repartidor (-> EN_CAMINO)",
+          "request": {
+            "method": "PATCH",
+            "url": {
+              "raw": "{{baseUrl}}/pedidos-delivery/{{pedidoDeliveryId}}/asignar-repartidor/{{repartidorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["pedidos-delivery", "{{pedidoDeliveryId}}", "asignar-repartidor", "{{repartidorId}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('estado EN_CAMINO', () => pm.expect(pm.response.json().estado).to.eql('EN_CAMINO'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "10. Caja",
+      "item": [
+        {
+          "name": "Cobrar pedido de mesa",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/caja/pagos", "host": ["{{baseUrl}}"], "path": ["caja", "pagos"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canal\": \"MESA\",\n  \"pedidoId\": {{pedidoMesaId}},\n  \"tipoPago\": \"EFECTIVO\",\n  \"propina\": 1\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('pago registrado', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cobrar pedido de delivery",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/caja/pagos", "host": ["{{baseUrl}}"], "path": ["caja", "pagos"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"canal\": \"DELIVERY\",\n  \"pedidoId\": {{pedidoDeliveryId}},\n  \"tipoPago\": \"TARJETA\",\n  \"propina\": 2\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.test('pago registrado', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cierre de caja diario",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/caja/cierre-diario?fecha={{fecha}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["caja", "cierre-diario"],
+              "query": [{ "key": "fecha", "value": "{{fecha}}" }]
+            }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "11. Rentabilidad",
+      "item": [
+        {
+          "name": "Rentabilidad por platillo",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/rentabilidad/platillos", "host": ["{{baseUrl}}"], "path": ["rentabilidad", "platillos"] }
+          },
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('200', () => pm.response.to.have.status(200));"] } }
+          ]
+        }
+      ]
+    }
+  ]
+}

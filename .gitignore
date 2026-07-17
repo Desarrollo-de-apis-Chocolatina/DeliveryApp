@@ -35,3 +35,9 @@ lerna-debug.log*
 # temp
 *.tmp
 *.tsbuildinfo
+
+# git worktrees (workspaces aislados para desarrollo)
+/.worktrees
+
+.claude
+.copilot

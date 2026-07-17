@@ -1,0 +1,6 @@
+# Override LOCAL (no versionar) para verificación en host cuando el puerto 5432
+# ya está ocupado por un Postgres nativo. Publica el contenedor en 5433.
+services:
+  db:
+    ports:
+      - "5433:5432"
