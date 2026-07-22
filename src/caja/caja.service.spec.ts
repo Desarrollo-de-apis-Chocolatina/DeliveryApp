@@ -124,6 +124,38 @@ describe('CajaService', () => {
         ),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('lanza BadRequestException si el pedido de mesa no ha sido entregado', async () => {
+      manager.findOne.mockResolvedValue({
+        id: 8,
+        estado: EstadoPedidoMesa.EN_COCINA,
+        detalles: [],
+      });
+
+      await expect(
+        service.registrarPago(
+          { canal: CanalPedido.MESA, pedidoId: 8, tipoPago: TipoPago.EFECTIVO },
+          'cajero-uuid-5',
+        ),
+      ).rejects.toThrow(BadRequestException);
+      expect(manager.save).not.toHaveBeenCalled();
+    });
+
+    it('lanza BadRequestException si el pedido de delivery no ha sido entregado', async () => {
+      manager.findOne.mockResolvedValue({
+        id: 9,
+        estado: EstadoPedidoDelivery.EN_CAMINO,
+        detalles: [],
+      });
+
+      await expect(
+        service.registrarPago(
+          { canal: CanalPedido.DELIVERY, pedidoId: 9, tipoPago: TipoPago.EFECTIVO },
+          'cajero-uuid-6',
+        ),
+      ).rejects.toThrow(BadRequestException);
+      expect(manager.save).not.toHaveBeenCalled();
+    });
   });
 
   describe('cierreDiario', () => {

@@ -42,7 +42,11 @@ export class CajaService {
         const pedido = await manager.findOne(PedidoMesa, {
           where: { id: dto.pedidoId },
         });
-        this.validarPedidoCobrable(pedido, pedido?.estado === EstadoPedidoMesa.PAGADO);
+        this.validarPedidoCobrable(
+          pedido,
+          pedido?.estado === EstadoPedidoMesa.ENTREGADO,
+          pedido?.estado === EstadoPedidoMesa.PAGADO,
+        );
 
         pedido!.estado = EstadoPedidoMesa.PAGADO;
         await manager.save(pedido!);
@@ -59,6 +63,7 @@ export class CajaService {
       });
       this.validarPedidoCobrable(
         pedido,
+        pedido?.estado === EstadoPedidoDelivery.ENTREGADO,
         pedido?.estado === EstadoPedidoDelivery.PAGADO,
       );
 
@@ -146,13 +151,19 @@ export class CajaService {
 
   private validarPedidoCobrable(
     pedido: unknown | null,
-    yaPagado: boolean,
+    estaEntregado: boolean,
+    estaPagado: boolean,
   ): void {
     if (!pedido) {
       throw new NotFoundException('El pedido indicado no existe.');
     }
-    if (yaPagado) {
+    if (estaPagado) {
       throw new BadRequestException('El pedido ya está pagado.');
+    }
+    if (!estaEntregado) {
+      throw new BadRequestException(
+        'El pedido no ha sido entregado, no se puede cobrar.',
+      );
     }
   }
 
