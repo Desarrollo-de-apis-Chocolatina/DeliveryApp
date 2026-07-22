@@ -175,12 +175,12 @@ describe('PedidosMesaService', () => {
       expect(manager.save).not.toHaveBeenCalled();
     });
 
-    it('lanza BadRequestException si el pedido no existe', async () => {
+    it('lanza NotFoundException si el pedido no existe', async () => {
       manager.findOne.mockResolvedValueOnce(null);
 
       await expect(
         service.updateEstado(99, EstadoPedidoMesa.LISTO),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -238,7 +238,7 @@ describe('PedidosMesaService', () => {
   });
 
   describe('updateEstado (otros estados)', () => {
-    it('cambia el estado sin transacción ni descuento de stock', async () => {
+    it('cambia el estado de LISTO a ENTREGADO correctamente', async () => {
       const pedido = { id: 1, estado: EstadoPedidoMesa.LISTO };
       pedidoRepository.findOne.mockResolvedValueOnce(pedido);
 
@@ -251,6 +251,26 @@ describe('PedidosMesaService', () => {
       expect(dataSource.transaction).not.toHaveBeenCalled();
       expect(inventarioService.descontarStockDePlatillo).not.toHaveBeenCalled();
       expect(pedidoRepository.save).toHaveBeenCalledWith(pedido);
+    });
+
+    it('lanza BadRequestException si se intenta un salto de estado no permitido (ej. TOMADO a ENTREGADO)', async () => {
+      const pedido = { id: 1, estado: EstadoPedidoMesa.TOMADO };
+      pedidoRepository.findOne.mockResolvedValueOnce(pedido);
+
+      await expect(
+        service.updateEstado(1, EstadoPedidoMesa.ENTREGADO),
+      ).rejects.toThrow(BadRequestException);
+      expect(pedidoRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('lanza BadRequestException si se intenta un retroceso de estado (ej. ENTREGADO a EN_COCINA)', async () => {
+      const pedido = { id: 1, estado: EstadoPedidoMesa.ENTREGADO };
+      pedidoRepository.findOne.mockResolvedValueOnce(pedido);
+
+      await expect(
+        service.updateEstado(1, EstadoPedidoMesa.EN_COCINA),
+      ).rejects.toThrow(BadRequestException);
+      expect(pedidoRepository.save).not.toHaveBeenCalled();
     });
 
     it('lanza NotFoundException si el pedido no existe', async () => {

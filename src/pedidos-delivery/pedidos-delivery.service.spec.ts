@@ -171,7 +171,7 @@ describe('PedidosDeliveryService', () => {
   });
 
   describe('updateEstado (otros estados)', () => {
-    it('cambia el estado sin transacción ni descuento de stock', async () => {
+    it('cambia el estado de EN_CAMINO a ENTREGADO correctamente', async () => {
       const pedido = { id: 1, estado: EstadoPedidoDelivery.EN_CAMINO };
       pedidoRepository.findOne.mockResolvedValueOnce(pedido);
 
@@ -183,6 +183,34 @@ describe('PedidosDeliveryService', () => {
       expect(resultado.estado).toBe(EstadoPedidoDelivery.ENTREGADO);
       expect(dataSource.transaction).not.toHaveBeenCalled();
       expect(pedidoRepository.save).toHaveBeenCalledWith(pedido);
+    });
+
+    it('lanza BadRequestException al intentar pasar a EN_CAMINO sin asignar repartidor', async () => {
+      await expect(
+        service.updateEstado(1, EstadoPedidoDelivery.EN_CAMINO),
+      ).rejects.toThrow(BadRequestException);
+      expect(pedidoRepository.findOne).not.toHaveBeenCalled();
+      expect(pedidoRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('lanza BadRequestException si se intenta un salto de estado no permitido (ej. TOMADO a ENTREGADO)', async () => {
+      const pedido = { id: 1, estado: EstadoPedidoDelivery.TOMADO };
+      pedidoRepository.findOne.mockResolvedValueOnce(pedido);
+
+      await expect(
+        service.updateEstado(1, EstadoPedidoDelivery.ENTREGADO),
+      ).rejects.toThrow(BadRequestException);
+      expect(pedidoRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('lanza BadRequestException si se intenta un retroceso de estado (ej. ENTREGADO a EN_COCINA)', async () => {
+      const pedido = { id: 1, estado: EstadoPedidoDelivery.ENTREGADO };
+      pedidoRepository.findOne.mockResolvedValueOnce(pedido);
+
+      await expect(
+        service.updateEstado(1, EstadoPedidoDelivery.EN_COCINA),
+      ).rejects.toThrow(BadRequestException);
+      expect(pedidoRepository.save).not.toHaveBeenCalled();
     });
 
     it('lanza NotFoundException si el pedido no existe', async () => {

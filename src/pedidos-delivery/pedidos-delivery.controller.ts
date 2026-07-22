@@ -48,13 +48,13 @@ export class PedidosDeliveryController {
   @ApiOperation({
     summary: 'Actualizar el estado de un pedido de delivery',
     description:
-      'Cambia el estado del pedido de delivery identificado por su ID (TOMADO, EN_COCINA, LISTO, EN_CAMINO, ENTREGADO). El estado PAGADO no se puede fijar aquí: se marca automáticamente al registrar el cobro en POST /caja/pagos.',
+      'Cambia el estado del pedido de delivery respetando la secuencia estricta (TOMADO -> EN_COCINA -> LISTO -> EN_CAMINO -> ENTREGADO). Para pasar a EN_CAMINO debe usarse PATCH /pedidos-delivery/:id/asignar-repartidor/:repartidorId. El estado PAGADO se marca automáticamente al registrar el cobro en POST /caja/pagos.',
   })
   @ApiResponse({ status: 200, description: 'Estado del pedido actualizado.' })
   @ApiResponse({
     status: 400,
     description:
-      'Estado inválido, o se intentó fijar PAGADO directamente (debe hacerse vía POST /caja/pagos).',
+      'Transición de estado no válida, o se intentó pasar a EN_CAMINO / PAGADO directamente.',
   })
   @ApiResponse({ status: 401, description: 'No autenticado.' })
   @ApiResponse({ status: 403, description: 'No autorizado para esta acción.' })

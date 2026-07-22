@@ -53,10 +53,26 @@ export class PedidosDeliveryService {
       );
     }
 
+    if (estado === EstadoPedidoDelivery.EN_CAMINO) {
+      throw new BadRequestException(
+        'El pedido debe pasar a EN_CAMINO asignando un repartidor en POST /api/pedidos-delivery/:id/asignar-repartidor',
+      );
+    }
+
+    const TRANSICIONES_PERMITIDAS: Record<EstadoPedidoDelivery, EstadoPedidoDelivery[]> = {
+      [EstadoPedidoDelivery.TOMADO]: [EstadoPedidoDelivery.EN_COCINA],
+      [EstadoPedidoDelivery.EN_COCINA]: [EstadoPedidoDelivery.LISTO],
+      [EstadoPedidoDelivery.LISTO]: [],
+      [EstadoPedidoDelivery.EN_CAMINO]: [EstadoPedidoDelivery.ENTREGADO],
+      [EstadoPedidoDelivery.ENTREGADO]: [],
+      [EstadoPedidoDelivery.PAGADO]: [],
+    };
+
     if (estado === EstadoPedidoDelivery.LISTO) {
       return await this.dataSource.transaction(async (manager) => {
         const pedido = await manager.findOne(PedidoDelivery, { where: { id }, relations: { detalles: true } });
-        if (!pedido || pedido.estado !== EstadoPedidoDelivery.EN_COCINA) {
+        if (!pedido) throw new NotFoundException('Pedido no encontrado');
+        if (pedido.estado !== EstadoPedidoDelivery.EN_COCINA) {
           throw new BadRequestException('El pedido debe estar EN_COCINA para pasar a LISTO');
         }
 
@@ -75,6 +91,14 @@ export class PedidosDeliveryService {
 
     const pedido = await this.pedidoRepository.findOne({ where: { id } });
     if (!pedido) throw new NotFoundException('Pedido no encontrado');
+
+    const permitidos = TRANSICIONES_PERMITIDAS[pedido.estado] || [];
+    if (!permitidos.includes(estado)) {
+      throw new BadRequestException(
+        `Transición de estado no válida de ${pedido.estado} a ${estado}`,
+      );
+    }
+
     pedido.estado = estado;
     return await this.pedidoRepository.save(pedido);
   }

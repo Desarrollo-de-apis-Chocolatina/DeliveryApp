@@ -95,10 +95,19 @@ export class PedidosMesaService {
       );
     }
 
+    const TRANSICIONES_PERMITIDAS: Record<EstadoPedidoMesa, EstadoPedidoMesa[]> = {
+      [EstadoPedidoMesa.TOMADO]: [EstadoPedidoMesa.EN_COCINA],
+      [EstadoPedidoMesa.EN_COCINA]: [EstadoPedidoMesa.LISTO],
+      [EstadoPedidoMesa.LISTO]: [EstadoPedidoMesa.ENTREGADO],
+      [EstadoPedidoMesa.ENTREGADO]: [],
+      [EstadoPedidoMesa.PAGADO]: [],
+    };
+
     if (estado === EstadoPedidoMesa.LISTO) {
       return await this.dataSource.transaction(async (manager) => {
         const pedido = await manager.findOne(PedidoMesa, { where: { id }, relations: { detalles: true } });
-        if (!pedido || pedido.estado !== EstadoPedidoMesa.EN_COCINA) {
+        if (!pedido) throw new NotFoundException('Pedido no encontrado');
+        if (pedido.estado !== EstadoPedidoMesa.EN_COCINA) {
           throw new BadRequestException('El pedido debe estar EN_COCINA para pasar a LISTO');
         }
 
@@ -117,6 +126,14 @@ export class PedidosMesaService {
 
     const pedido = await this.pedidoRepository.findOne({ where: { id } });
     if (!pedido) throw new NotFoundException('Pedido no encontrado');
+
+    const permitidos = TRANSICIONES_PERMITIDAS[pedido.estado] || [];
+    if (!permitidos.includes(estado)) {
+      throw new BadRequestException(
+        `Transición de estado no válida de ${pedido.estado} a ${estado}`,
+      );
+    }
+
     pedido.estado = estado;
     return await this.pedidoRepository.save(pedido);
   }
