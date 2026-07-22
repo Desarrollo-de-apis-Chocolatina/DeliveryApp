@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource, EntityManager } from 'typeorm';
+import { DataSource, EntityManager, Not } from 'typeorm';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { PedidosMesaService } from './pedidos-mesa.service';
 import { PedidoMesa, EstadoPedidoMesa } from './entities/pedido-mesa.entity';
@@ -52,6 +52,7 @@ describe('PedidosMesaService', () => {
       const mesero = { id: 'mesero-1' };
       const platillo = { id: 5, disponible: true, precio: 12.5 };
       manager.findOne
+        .mockResolvedValueOnce(null) // no hay pedido abierto para la mesa
         .mockResolvedValueOnce(mesero) // mesero
         .mockResolvedValueOnce(platillo); // platillo
 
@@ -72,7 +73,9 @@ describe('PedidosMesaService', () => {
     });
 
     it('lanza NotFoundException si el mesero no existe', async () => {
-      manager.findOne.mockResolvedValueOnce(null);
+      manager.findOne
+        .mockResolvedValueOnce(null) // no hay pedido abierto para la mesa
+        .mockResolvedValueOnce(null); // mesero no existe
 
       await expect(
         service.create(
@@ -85,6 +88,7 @@ describe('PedidosMesaService', () => {
 
     it('lanza BadRequestException si un platillo no existe o no está disponible', async () => {
       manager.findOne
+        .mockResolvedValueOnce(null) // no hay pedido abierto para la mesa
         .mockResolvedValueOnce({ id: 'mesero-1' }) // mesero
         .mockResolvedValueOnce({ id: 5, disponible: false, precio: 10 }); // platillo no disponible
 
@@ -95,6 +99,38 @@ describe('PedidosMesaService', () => {
         ),
       ).rejects.toThrow(BadRequestException);
       expect(manager.save).not.toHaveBeenCalled();
+    });
+
+    it('lanza BadRequestException si la mesa ya tiene un pedido abierto (no PAGADO)', async () => {
+      const pedidoAbierto = { id: 10, numeroMesa: 3, estado: EstadoPedidoMesa.EN_COCINA };
+      manager.findOne.mockResolvedValueOnce(pedidoAbierto);
+
+      await expect(
+        service.create(
+          { numeroMesa: 3, detalles: [{ platilloId: 5, cantidad: 1 }] },
+          'mesero-1',
+        ),
+      ).rejects.toThrow(BadRequestException);
+      expect(manager.findOne).toHaveBeenCalledTimes(1);
+      expect(manager.save).not.toHaveBeenCalled();
+    });
+
+    it('permite crear un pedido nuevo para la mesa consultando solo pedidos no PAGADOs', async () => {
+      const mesero = { id: 'mesero-1' };
+      const platillo = { id: 5, disponible: true, precio: 12.5 };
+      manager.findOne
+        .mockResolvedValueOnce(null) // el query ya excluye PAGADO: no encuentra nada abierto
+        .mockResolvedValueOnce(mesero)
+        .mockResolvedValueOnce(platillo);
+
+      await service.create(
+        { numeroMesa: 3, detalles: [{ platilloId: 5, cantidad: 2 }] },
+        'mesero-1',
+      );
+
+      expect(manager.findOne).toHaveBeenNthCalledWith(1, PedidoMesa, {
+        where: { numeroMesa: 3, estado: Not(EstadoPedidoMesa.PAGADO) },
+      });
     });
   });
 

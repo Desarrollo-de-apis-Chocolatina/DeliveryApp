@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, In, Not, Repository } from 'typeorm';
 import { PedidoMesa, EstadoPedidoMesa } from './entities/pedido-mesa.entity';
 import { DetallePedidoMesa } from './entities/detalle-pedido-mesa.entity';
 import { CreatePedidoMesaDto, DetalleDto } from './dto/create-pedido-mesa.dto';
@@ -19,6 +19,15 @@ export class PedidosMesaService {
 
   async create(dto: CreatePedidoMesaDto, meseroId: string): Promise<PedidoMesa> {
     return await this.dataSource.transaction(async (manager) => {
+      const pedidoAbierto = await manager.findOne(PedidoMesa, {
+        where: { numeroMesa: dto.numeroMesa, estado: Not(EstadoPedidoMesa.PAGADO) },
+      });
+      if (pedidoAbierto) {
+        throw new BadRequestException(
+          `La mesa ${dto.numeroMesa} ya tiene un pedido abierto (id ${pedidoAbierto.id}). Usa PATCH /pedidos-mesa/mesa/${dto.numeroMesa}/detalles para agregarle platillos.`,
+        );
+      }
+
       const mesero = await manager.findOne(Usuario, { where: { id: meseroId } });
       if (!mesero) throw new NotFoundException('Mesero no encontrado');
 
